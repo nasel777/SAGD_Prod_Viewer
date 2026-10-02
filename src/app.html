@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BG Production Viewer</title>
+<style>
+/*@@CSS@@*/
+</style>
+</head>
+<body>
+<div class="sticky">
+<header class="topbar">
+  <div class="brand">BG Production Viewer</div>
+  <div class="file-info" id="fileInfo">No file loaded</div>
+  <div class="spacer"></div>
+  <label class="btn primary">Open Excel…<input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls,.csv" hidden></label>
+  <button class="btn" id="saveCfg" disabled>Save layout</button>
+  <label class="btn">Load layout…<input type="file" id="cfgInput" accept=".json" hidden></label>
+</header>
+
+<div class="toolbar" id="toolbar" aria-disabled="true">
+  <div class="tgroup">
+    <span class="tlabel">Resolution</span>
+    <div class="seg" id="resSeg">
+      <button data-v="D">Daily</button><button data-v="W">Weekly</button><button data-v="M">Monthly</button>
+    </div>
+  </div>
+  <div class="tgroup">
+    <span class="tlabel">Moving avg</span>
+    <select id="maSel">
+      <option value="0">Off</option><option value="3">3 pts</option><option value="7">7 pts</option>
+      <option value="14">14 pts</option><option value="30">30 pts</option><option value="90">90 pts</option>
+    </select>
+  </div>
+  <label class="chk"><input type="checkbox" id="shutinChk"> Exclude shut-in days <span class="hint">(Production_Hours = 0)</span></label>
+  <label class="chk"><input type="checkbox" id="zeroChk"> Treat 0 as gap</label>
+  <label class="chk"><input type="checkbox" id="syncChk" checked> Sync date zoom</label>
+  <div class="tgroup">
+    <span class="tlabel">Columns</span>
+    <div class="seg" id="colSeg"><button data-v="1">1</button><button data-v="2">2</button></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="tgroup add">
+    <button class="btn primary" data-add="ts">+ Time series</button>
+    <button class="btn primary" data-add="xp">+ Crossplot</button>
+    <button class="btn primary" data-add="st">+ Statistics</button>
+  </div>
+</div>
+</div>
+
+<div class="empty" id="emptyState">
+  <div class="drop-card">
+    <div class="drop-icon">⇪</div>
+    <h1>Drop an Excel file here</h1>
+    <p>Each sheet is read as one well. The first column must be a date; every other numeric column becomes a variable.</p>
+    <p class="muted">Everything is processed locally in this browser. No data leaves your PC.</p>
+    <label class="btn primary big">Choose file…<input type="file" id="fileInput2" accept=".xlsx,.xlsm,.xls,.csv" hidden></label>
+  </div>
+</div>
+
+<main class="plots cols-1" id="plots"></main>
+
+<div class="drag-overlay" id="dragOverlay"><div>Drop Excel (.xlsx) or layout (.json)</div></div>
+<div class="loading" id="loading"><div class="spinner"></div><div id="loadingMsg">Reading workbook…</div></div>
+<div class="toast" id="toast"></div>
+
+<script id="xlsx-lib">
+/*@@XLSX@@*/
+</script>
+<script>
+/*@@PLOTLY@@*/
+</script>
+<script>
+/*@@APP@@*/
+</script>
+</body>
+</html>

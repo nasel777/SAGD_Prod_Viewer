@@ -1,0 +1,99 @@
+{
+  "app": "BG_Prod_Viewer",
+  "version": 1,
+  "savedAt": "2026-10-02T12:47:37.401Z",
+  "sourceFile": "integrated_data_20260916.xlsx",
+  "settings": {
+    "res": "D",
+    "ma": 0,
+    "excludeShutin": false,
+    "zeroGap": false,
+    "sync": true,
+    "cols": 1
+  },
+  "plots": [
+    {
+      "id": 1,
+      "type": "ts",
+      "title": "101_01 – Production & SOR",
+      "height": "S",
+      "collapsed": false,
+      "wells": [
+        "101_01"
+      ],
+      "vars": [
+        {
+          "name": "Prod_Emulsion_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Frequency_Hz",
+          "side": "R",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Intake_Pressure_kPa",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Casing_Pressure_kPa",
+          "side": "R",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Water_Cut_%",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Choke_Size_%",
+          "side": "R",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Inj_Steam_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Subcool_Point_7",
+          "side": "R",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "WHT_Temp",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines+markers",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    }
+  ]
+}
