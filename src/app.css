@@ -166,3 +166,4 @@ input[type=date], input[type=text] { padding: 4px 6px; border: 1px solid var(--b
 .varopt { display: flex; align-items: center; gap: 5px; margin-top: 5px; flex-wrap: wrap; }
 .varopt input[type=number] { width: 46px; padding: 2px 4px; border: 1px solid var(--border-strong); border-radius: 5px; font-size: 12px; }
 .swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; background: transparent; }
+a.btn { text-decoration: none; color: inherit; }

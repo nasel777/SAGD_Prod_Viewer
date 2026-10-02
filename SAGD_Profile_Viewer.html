@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAGD Production Viewer</title>
+<title>SAGD Profile Viewer</title>
 <style>
 :root {
   --bg: #f4f5f7;
@@ -175,63 +175,142 @@ input[type=date], input[type=text] { padding: 4px 6px; border: 1px solid var(--b
 .swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; background: transparent; }
 a.btn { text-decoration: none; color: inherit; }
 
+/* ---------- profile viewer (on top of app.css) ---------- */
+.hidden { display: none !important; }
+code { font-size: 12px; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
+.card-head .title.static { flex: 1; padding: 3px 6px; }
+.card-head .seg.small button { padding: 3px 9px; }
+.note.pad { color: var(--faint); font-size: 11.5px; padding: 0 12px 10px; }
+.znum { width: 70px; padding: 3px 6px; border: 1px solid var(--border-strong); border-radius: 6px; }
+
+.timebar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 12px; border-top: 1px solid var(--border); background: var(--surface-2);
+}
+.timebar input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
+.timebar .ibtn { font-size: 13px; }
+
+.mdpanel { padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.mdhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.mdgrid { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.mdgrid label { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.mdgrid input { width: 76px; padding: 3px 6px; border: 1px solid var(--border-strong); border-radius: 6px; }
+.mdpanel .note { color: var(--faint); font-size: 11.5px; margin-top: 6px; }
+
+.datechip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 8px; border-radius: 12px;
+  border: 1px solid var(--border-strong); background: var(--surface); font-size: 12px; }
+.datechip .dot { width: 9px; height: 9px; border-radius: 50%; }
+.datechip.cur { border-color: var(--text); font-weight: 600; padding-right: 8px; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick a { color: var(--accent); cursor: pointer; font-size: 12px; }
+table.ctx { border-collapse: collapse; font-size: 12px; width: 100%; }
+table.ctx td { padding: 2px 4px; border-bottom: 1px solid var(--border); }
+table.ctx td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+table.ctx td.unit { color: var(--faint); width: 1%; white-space: nowrap; }
+
 </style>
 </head>
 <body>
 <div class="sticky">
 <header class="topbar">
-  <div class="brand">SAGD Production Viewer</div>
+  <div class="brand">SAGD Profile Viewer</div>
   <div class="file-info" id="fileInfo">No file loaded</div>
   <div class="spacer"></div>
-  <a class="btn" href="SAGD_Profile_Viewer.html" title="Open the thermocouple profile viewer">Profile Viewer ↗</a>
+  <a class="btn" href="SAGD_Prod_Viewer.html" title="Open the production viewer">Production Viewer ↗</a>
   <label class="btn primary">Open Excel…<input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls,.csv" hidden></label>
-  <button class="btn" id="saveCfg" disabled>Save layout</button>
-  <label class="btn">Load layout…<input type="file" id="cfgInput" accept=".json" hidden></label>
 </header>
 
 <div class="toolbar" id="toolbar" aria-disabled="true">
   <div class="tgroup">
-    <span class="tlabel">Resolution</span>
-    <div class="seg" id="resSeg">
-      <button data-v="D">Daily</button><button data-v="W">Weekly</button><button data-v="M">Monthly</button>
-    </div>
+    <span class="tlabel">Well</span>
+    <select id="wellSel"></select>
   </div>
   <div class="tgroup">
-    <span class="tlabel">Moving avg</span>
-    <select id="maSel">
-      <option value="0">Off</option><option value="3">3 pts</option><option value="7">7 pts</option>
-      <option value="14">14 pts</option><option value="30">30 pts</option><option value="90">90 pts</option>
-    </select>
+    <span class="tlabel">Variable</span>
+    <div class="seg" id="varSeg"><button data-v="Temp">Temperature</button><button data-v="Subcool">Subcool</button></div>
   </div>
-  <label class="chk"><input type="checkbox" id="shutinChk"> Exclude shut-in days <span class="hint">(Production_Hours = 0)</span></label>
-  <label class="chk"><input type="checkbox" id="zeroChk"> Treat 0 as gap</label>
-  <label class="chk"><input type="checkbox" id="syncChk" checked> Sync date zoom</label>
   <div class="tgroup">
-    <span class="tlabel">Columns</span>
-    <div class="seg" id="colSeg"><button data-v="1">1</button><button data-v="2">2</button></div>
+    <span class="tlabel">Average</span>
+    <div class="seg" id="avgSeg"><button data-v="1">1 d</button><button data-v="7">7 d</button><button data-v="30">30 d</button></div>
   </div>
-  <div class="spacer"></div>
-  <div class="tgroup add">
-    <button class="btn primary" data-add="ts">+ Time series</button>
-    <button class="btn primary" data-add="xp">+ Crossplot</button>
-    <button class="btn primary" data-add="st">+ Statistics</button>
+  <div class="tgroup">
+    <span class="tlabel">Position</span>
+    <div class="seg" id="axisSeg"><button data-v="idx">Point #</button><button data-v="md">MD</button></div>
+    <button class="btn" id="mdBtn">Edit MD…</button>
   </div>
+  <div class="tgroup">
+    <span class="tlabel">Range</span>
+    <input type="number" id="vmin" placeholder="auto" class="znum" title="Lower bound for the profile value axis and the map colors">
+    <span class="tlabel">–</span>
+    <input type="number" id="vmax" placeholder="auto" class="znum" title="Upper bound for the profile value axis and the map colors">
+  </div>
+  <label class="chk"><input type="checkbox" id="revChk"> Reverse position axis</label>
+  <label class="chk"><input type="checkbox" id="cleanChk" checked> Clean values <span class="hint" title="Temp ≤ 0 °C marks a dead thermocouple: its temperature and subcool are hidden. Subcool is also hidden when Temp + Subcool &gt; 374 °C (above water's critical point).">(dead sensors, impossible subcool)</span></label>
+</div>
+
+<div class="mdpanel" id="mdPanel" hidden>
+  <div class="mdhead">
+    <b>Thermocouple MD</b> <span class="hint" id="mdWell"></span>
+    <div class="spacer"></div>
+    <button class="btn" id="mdCopy">Copy to all wells</button>
+    <button class="btn" id="mdClear">Clear</button>
+    <button class="btn primary" id="mdClose">Done</button>
+  </div>
+  <div class="mdgrid" id="mdGrid"></div>
+  <div class="note">Measured depth (m) of each point for the selected well. Stored in this browser only. Leave blank to plot by point number.</div>
 </div>
 </div>
 
 <div class="empty" id="emptyState">
   <div class="drop-card">
     <div class="drop-icon">⇪</div>
-    <h1>Drop an Excel file here</h1>
-    <p>Each sheet is read as one well. The first column must be a date; every other numeric column becomes a variable.</p>
+    <h1>Drop the production Excel file here</h1>
+    <p>Each sheet is read as one well. Columns named <code>Temp_Point_1…n</code> and <code>Subcool_Point_1…n</code> are plotted as a profile along the wellbore.</p>
     <p class="muted">Everything is processed locally in this browser. No data leaves your PC.</p>
     <label class="btn primary big">Choose file…<input type="file" id="fileInput2" accept=".xlsx,.xlsm,.xls,.csv" hidden></label>
   </div>
 </div>
 
-<main class="plots cols-1" id="plots"></main>
+<main class="plots cols-1 hidden" id="main">
+  <section class="card">
+    <div class="card-head">
+      <div class="title static" id="profTitle">Profile</div>
+      <div class="seg small" id="modeSeg"><button data-v="dates">Compare dates</button><button data-v="wells">Compare wells</button></div>
+      <div class="icons"><button class="ibtn" id="csvBtn" title="Download the plotted profiles as CSV">CSV</button></div>
+    </div>
+    <div class="card-body">
+      <div class="cfg" id="profCfg"></div>
+      <div class="chart-wrap">
+        <div class="chart" id="profChart"></div>
+        <div class="chart-msg" id="profMsg"></div>
+      </div>
+    </div>
+    <div class="timebar">
+      <button class="ibtn" id="prevBtn" title="Step back">◀</button>
+      <button class="ibtn" id="playBtn" title="Play / pause">▶ Play</button>
+      <button class="ibtn" id="nextBtn" title="Step forward">▶</button>
+      <select id="stepSel" title="Step size">
+        <option value="1">1 day</option><option value="7" selected>7 days</option><option value="30">30 days</option>
+      </select>
+      <input type="range" id="slider" min="0" max="0" value="0">
+      <input type="date" id="dateInput">
+      <button class="btn" id="pinBtn" title="Keep this date as a profile line">+ Keep date</button>
+    </div>
+  </section>
 
-<div class="drag-overlay" id="dragOverlay"><div>Drop Excel (.xlsx) or layout (.json)</div></div>
+  <section class="card">
+    <div class="card-head">
+      <div class="title static" id="heatTitle">Time × position</div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart" id="heatChart"></div>
+      <div class="chart-msg" id="heatMsg"></div>
+    </div>
+    <div class="note pad">Click the map to move the current date. Vertical lines mark the current date (solid) and kept dates (dashed).</div>
+  </section>
+</main>
+
+<div class="drag-overlay" id="dragOverlay"><div>Drop Excel (.xlsx)</div></div>
 <div class="loading" id="loading"><div class="spinner"></div><div id="loadingMsg">Reading workbook…</div></div>
 <div class="toast" id="toast"></div>
 
@@ -509,691 +588,42 @@ async function readWorkbook(file, onStatus) {
 </script>
 <script>
 'use strict';
-/* SAGD Production Viewer — client-side Excel → Plotly viewer.
-   Each sheet = one well. First "Date" column = daily timestamp. */
+/* SAGD Profile Viewer — thermocouple temperature / subcool along the wellbore.
+   Reads the same workbook as the production viewer (one sheet per well) and uses
+   the Temp_Point_n / Subcool_Point_n columns as positions along the lateral. */
 
 const DAY = 86400000;
-const STORE_KEY = 'bgProdViewer.layout.v1';
-// Categorical palette: 8 validated hues + 8 darker companions for wells 9-16.
+const STORE_KEY = 'sagdProfileViewer.v1';
+const MD_KEY = 'sagdProfileViewer.md.v1';
 const PALETTE = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#4a3aa7', '#e34948',
                  '#164f94', '#a3401a', '#0c6e4a', '#8f6100', '#a83a66', '#4c4c4c', '#8c7fe0', '#8f2423'];
-const DASHES = ['solid', 'dash', 'dot', 'dashdot', 'longdash', 'longdashdot'];
-const SYMBOLS = ['circle', 'square', 'diamond', 'triangle-up', 'triangle-down', 'cross', 'x', 'star',
-                 'hexagon', 'pentagon', 'circle-open', 'square-open', 'diamond-open', 'triangle-up-open', 'star-open', 'hexagon-open'];
-const HEIGHTS = { S: 300, M: 420, L: 560, XL: 720 };
-const TYPE_LABEL = { ts: 'Time series', xp: 'Crossplot', st: 'Statistics' };
+const VARS = {
+  Temp:    { label: 'Temperature', colorscale: [[0, '#fff5d6'], [0.25, '#fdc96b'], [0.5, '#f2853a'], [0.75, '#c9372c'], [1, '#5e0d1c']] },
+  // low subcool (steam near the producer) red, high subcool (liquid pooling) blue
+  Subcool: { label: 'Subcool', colorscale: [[0, '#b2182b'], [0.25, '#ef8a62'], [0.5, '#f7f7f7'], [0.75, '#67a9cf'], [1, '#2166ac']] },
+};
+const CONTEXT_COLS = [
+  ['Prod_Oil_rate_bbld', 'Oil', 'bbl/d'], ['Prod_Water_rate_bbld', 'Water', 'bbl/d'], ['Inj_Steam_rate_bbld', 'Steam', 'bbl/d'],
+  ['Temp_Max', 'Temp max', '°C'], ['Subcool_Min', 'Subcool min', '°C'], ['Production_Hours', 'Prod. hours', 'h'],
+];
+const TSAT_MAX = 374; // °C, critical point of water
+const AXIS = { gridcolor: '#eceef1', linecolor: '#c5cbd4', zeroline: false, ticks: 'outside', tickcolor: '#c5cbd4', automargin: true, showline: true };
 
-const S = {
+const P = {
   fileName: null,
-  wells: [],          // well (sheet) names in workbook order
-  data: {},           // name -> { t: Float64Array(ms UTC), cols: {name: Float64Array}, start: ms }
-  rawCols: [],        // union of numeric columns (excluding date)
-  flagCols: new Set(),
-  allVars: [],        // rawCols + derived
-  derived: {},        // active derived definitions
-  settings: { res: 'D', ma: 0, excludeShutin: false, zeroGap: false, sync: true, cols: 1 },
-  plots: [],
-  nextId: 1,
-  exports: {},
-  syncing: false,
-  pendingLayout: null,
+  wells: [],
+  data: {},            // well -> { t: Float64Array, cols: {name: Float64Array}, n }
+  points: [],          // sorted point numbers found in Temp_/Subcool_Point_n columns
+  tmin: 0, tmax: 0,
+  settings: { well: '', v: 'Temp', avg: 1, axis: 'idx', reverse: false, clean: true, mode: 'dates',
+              cur: 0, dates: [], wells: [], vmin: '', vmax: '', step: 7 },
+  md: {},              // well -> [md per point index] (stored in this browser)
+  cache: new Map(),
+  exportRows: null,
+  playing: null,
 };
 
-/* ================= derived variables ================= */
-const DERIVED_DEFS = {
-  // daily sum of columns; behaves like a raw value (masks, averaging, smoothing all apply)
-  'Prod_Emulsion_rate_bbld': { kind: 'value', sum: ['Prod_Oil_rate_bbld', 'Prod_Water_rate_bbld'], group: 'Production' },
-  'SOR':           { kind: 'ratio', num: ['Inj_Steam_rate_bbld'], den: ['Prod_Oil_rate_bbld'], scale: 1, minDen: 1 },
-  'Water_Cut_%':   { kind: 'ratio', num: ['Prod_Water_rate_bbld'], den: ['Prod_Oil_rate_bbld', 'Prod_Water_rate_bbld'], scale: 100 },
-  'Cum_Oil_bbl':   { kind: 'cum', src: 'Prod_Oil_rate_bbld' },
-  'Cum_Water_bbl': { kind: 'cum', src: 'Prod_Water_rate_bbld' },
-  'Cum_Steam_bbl': { kind: 'cum', src: 'Inj_Steam_rate_bbld' },
-  'CSOR':          { kind: 'cum', ratioOf: ['Cum_Steam_bbl', 'Cum_Oil_bbl'] },
-};
-
-/* ================= loading ================= */
-async function loadExcel(file) {
-  showLoading(`Reading ${file.name} (${(file.size / 1048576).toFixed(1)} MB)…`);
-  const t0 = performance.now();
-  try {
-    const sheets = await readWorkbook(file, msg => { $('#loadingMsg').textContent = msg; });
-    if (!sheets.length) throw new Error('No sheet with a date column and data rows was found.');
-    ingest(file.name, sheets);
-    toast(`Loaded ${S.wells.length} wells in ${((performance.now() - t0) / 1000).toFixed(1)} s`);
-  } catch (e) {
-    console.error(e);
-    toast('Failed to read file: ' + (e.message || e), true);
-  } finally {
-    hideLoading();
-  }
-}
-
-function ingest(fileName, sheets) {
-  S.fileName = fileName;
-  S.wells = [];
-  S.data = {};
-  const colOrder = [];
-  const seen = new Set();
-  for (const sh of sheets) {
-    S.wells.push(sh.name);
-    S.data[sh.name] = { t: sh.t, cols: sh.cols, n: sh.t.length };
-    for (const h of sh.header) if (!seen.has(h)) { seen.add(h); colOrder.push(h); }
-  }
-  S.rawCols = colOrder;
-
-  // 0/1 flag columns
-  S.flagCols = new Set();
-  for (const c of colOrder) {
-    let ok = true;
-    for (const w of S.wells) {
-      const a = S.data[w].cols[c];
-      if (!a) continue;
-      for (let i = 0; i < a.length; i++) { const v = a[i]; if (!isNaN(v) && v !== 0 && v !== 1) { ok = false; break; } }
-      if (!ok) break;
-    }
-    if (ok) S.flagCols.add(c);
-  }
-
-  // derived columns
-  S.derived = {};
-  for (const [name, d] of Object.entries(DERIVED_DEFS)) {
-    if (d.sum && d.sum.every(c => seen.has(c))) S.derived[name] = d;
-    if (d.kind === 'ratio' && [...d.num, ...d.den].every(c => seen.has(c))) S.derived[name] = d;
-    if (d.kind === 'cum' && d.src && seen.has(d.src)) S.derived[name] = d;
-    if (d.kind === 'cum' && d.ratioOf && d.ratioOf.every(c => S.derived[c])) S.derived[name] = d;
-  }
-  for (const w of S.wells) {
-    const W = S.data[w];
-    for (const [name, d] of Object.entries(S.derived)) {
-      if (!d.sum && d.kind !== 'cum') continue;
-      const out = new Float64Array(W.n);
-      if (d.sum) {
-        const srcs = d.sum.map(c => W.cols[c]).filter(Boolean);
-        for (let i = 0; i < W.n; i++) {
-          let s = 0, any = false;
-          for (const a of srcs) if (Number.isFinite(a[i])) { s += a[i]; any = true; }
-          out[i] = any ? s : NaN;
-        }
-      } else if (d.src) {
-        const a = W.cols[d.src];
-        let s = 0;
-        for (let i = 0; i < W.n; i++) { const v = a ? a[i] : NaN; if (Number.isFinite(v)) s += v; out[i] = s; }
-      } else {
-        const a = W.cols[d.ratioOf[0]], b = W.cols[d.ratioOf[1]];
-        for (let i = 0; i < W.n; i++) out[i] = b[i] > 0 ? a[i] / b[i] : NaN;
-      }
-      W.cols[name] = out;
-    }
-    // first-oil date for "days since start"
-    const oil = W.cols['Prod_Oil_rate_bbld'];
-    W.start = W.t[0];
-    if (oil) for (let i = 0; i < W.n; i++) if (oil[i] > 0) { W.start = W.t[i]; break; }
-  }
-  S.allVars = [...S.rawCols, ...Object.keys(S.derived)];
-
-  // file info
-  let tmin = Infinity, tmax = -Infinity;
-  for (const w of S.wells) { const t = S.data[w].t; tmin = Math.min(tmin, t[0]); tmax = Math.max(tmax, t[t.length - 1]); }
-  $('#fileInfo').textContent = `${fileName}  ·  ${S.wells.length} wells  ·  ${S.rawCols.length} columns  ·  ${isoDate(tmin)} → ${isoDate(tmax)}`;
-  $('#fileInfo').title = $('#fileInfo').textContent;
-  $('#toolbar').setAttribute('aria-disabled', 'false');
-  $('#saveCfg').disabled = false;
-  $('#emptyState').classList.add('hidden');
-
-  // plots: pending layout file > existing plots > last session > defaults
-  if (S.pendingLayout) { applyLayout(S.pendingLayout); S.pendingLayout = null; return; }
-  if (S.plots.length) { S.plots.forEach(sanitize); rebuildAll(); return; }
-  let restored = null;
-  try { restored = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (e) { /* storage unavailable */ }
-  if (restored && restored.plots && restored.plots.length) { applyLayout(restored, true); return; }
-  defaultPlots();
-}
-
-/* ================= series pipeline ================= */
-function varKind(name) {
-  const d = S.derived[name];
-  if (d) return d.kind;
-  if (S.flagCols.has(name)) return 'flag';
-  return 'value';
-}
-
-function isoDate(ms) { return new Date(ms).toISOString().slice(0, 10); }
-
-function binKey(ms, res) {
-  if (res === 'W') { const d = Math.floor(ms / DAY); return (d - ((d + 3) % 7)) * DAY; } // Monday start
-  if (res === 'M') { const dt = new Date(ms); return Date.UTC(dt.getUTCFullYear(), dt.getUTCMonth(), 1); }
-  return ms;
-}
-
-// daily values with shut-in / zero masks applied
-function maskedDaily(well, name, allowZeroGap) {
-  const W = S.data[well];
-  const src = W && W.cols[name];
-  if (!src) return null;
-  const kind = varKind(name);
-  if (kind === 'flag' || kind === 'cum') return src;
-  const out = Float64Array.from(src);
-  const hrs = W.cols['Production_Hours'];
-  const ex = S.settings.excludeShutin && hrs, zg = allowZeroGap && S.settings.zeroGap;
-  if (ex || zg) {
-    for (let i = 0; i < out.length; i++) {
-      if (ex && hrs[i] === 0) out[i] = NaN;
-      else if (zg && out[i] === 0) out[i] = NaN;
-    }
-  }
-  return out;
-}
-
-function aggregate(t, y, res, mode) {
-  if (res === 'D') return { t: Array.from(t), y: Array.from(y) };
-  const tt = [], yy = [];
-  let cur = null, sum = 0, n = 0, last = NaN;
-  const flush = () => { tt.push(cur); yy.push(mode === 'last' ? last : (n ? sum / n : NaN)); };
-  for (let i = 0; i < t.length; i++) {
-    const k = binKey(t[i], res);
-    if (k !== cur) { if (cur !== null) flush(); cur = k; sum = 0; n = 0; last = NaN; }
-    const v = y[i];
-    if (Number.isFinite(v)) { sum += v; n++; last = v; }
-  }
-  if (cur !== null) flush();
-  return { t: tt, y: yy };
-}
-
-function movingAvg(y, N) {
-  if (!N || N < 2) return y;
-  const out = new Array(y.length);
-  let sum = 0, n = 0;
-  for (let i = 0; i < y.length; i++) {
-    const v = y[i];
-    if (Number.isFinite(v)) { sum += v; n++; }
-    if (i >= N) { const o = y[i - N]; if (Number.isFinite(o)) { sum -= o; n--; } }
-    out[i] = Number.isFinite(v) && n ? sum / n : NaN;
-  }
-  return out;
-}
-
-function summedComponents(well, names, res, ma) {
-  let acc = null;
-  for (const nm of names) {
-    const d = maskedDaily(well, nm, false);
-    if (!d) return null;
-    const a = aggregate(S.data[well].t, d, res, 'mean');
-    a.y = movingAvg(a.y, ma);
-    if (!acc) acc = a;
-    else acc.y = acc.y.map((v, i) => v + a.y[i]);
-  }
-  return acc;
-}
-
-/** Returns {t:[ms], y:[number|NaN]} for a well/variable under current settings. */
-function getSeries(well, name, opts = {}) {
-  const W = S.data[well];
-  if (!W) return null;
-  const res = opts.res || S.settings.res;
-  const ma = opts.noMA ? 0 : S.settings.ma;
-  const d = S.derived[name];
-  if (d && d.kind === 'ratio') {
-    const num = summedComponents(well, d.num, res, ma), den = summedComponents(well, d.den, res, ma);
-    if (!num || !den) return null;
-    let y = num.y.map((v, i) => (den.y[i] > (d.minDen || 0) && Number.isFinite(v)) ? v / den.y[i] * d.scale : NaN);
-    if (S.settings.zeroGap) y = y.map(v => v === 0 ? NaN : v);
-    return { t: num.t, y };
-  }
-  const daily = maskedDaily(well, name, true);
-  if (!daily) return null;
-  const kind = varKind(name);
-  const a = aggregate(W.t, daily, res, kind === 'cum' ? 'last' : 'mean');
-  if (kind === 'value') a.y = movingAvg(a.y, ma);
-  return a;
-}
-
-/* ================= styling helpers ================= */
-function wellIndex(w) { return Math.max(0, S.wells.indexOf(w)); }
-function wellColor(w) { return PALETTE[wellIndex(w) % PALETTE.length]; }
-function wellDash(w) { return DASHES[Math.floor(wellIndex(w) / PALETTE.length) % DASHES.length]; }
-function varUnit(name) {
-  const m = name.match(/_(t\/hr|Kg\/hr|kPa|Hz|Am3\/h|%|N\/m|Amp|bbld|bbl)$/i);
-  if (/Temp|Subcool/i.test(name)) return '°C';
-  if (name === 'SOR' || name === 'CSOR') return 'bbl/bbl';
-  if (m) return m[1] === 'bbld' ? 'bbl/d' : m[1];
-  return '';
-}
-function axisTitle(names) {
-  if (!names.length) return '';
-  const units = [...new Set(names.map(varUnit).filter(Boolean))];
-  const label = names.length <= 2 ? names.join(', ') : `${names.length} variables`;
-  return units.length === 1 ? `${label} [${units[0]}]` : label;
-}
-
-function baseLayout(p) {
-  return {
-    height: HEIGHTS[p.height] || HEIGHTS.M,
-    margin: { l: 64, r: 64, t: 18, b: 40 },
-    paper_bgcolor: '#ffffff', plot_bgcolor: '#ffffff',
-    font: { family: 'Segoe UI, system-ui, sans-serif', size: 12, color: '#1b1f24' },
-    legend: { orientation: 'h', x: 0, y: -0.14, yanchor: 'top', font: { size: 11 } },
-    hoverlabel: { font: { size: 12 } },
-    uirevision: `${p.id}`,
-  };
-}
-const AXIS = { gridcolor: '#eceef1', linecolor: '#c5cbd4', zeroline: false, ticks: 'outside', tickcolor: '#c5cbd4', automargin: true };
-
-function plotConfig(p) {
-  return {
-    responsive: true, displaylogo: false,
-    modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'],
-    toImageButtonOptions: { filename: safeName(p.title), scale: 2 },
-  };
-}
-
-/* ================= renderers ================= */
-function renderTS(p) {
-  const traces = [], exp = [];
-  const xm = p.xmode;
-  const wells = p.wells.filter(w => S.data[w]);
-  const vars = p.vars.filter(v => S.allVars.includes(v.name));
-  const multiW = wells.length > 1, multiV = vars.length > 1;
-  const stacked = p.axisMode === 'stacked';
-  let npts = 0;
-  vars.forEach((v, vi) => {
-    wells.forEach(w => {
-      const s = getSeries(w, v.name);
-      if (!s) return;
-      let x, y = s.y;
-      if (xm === 'aligned') {
-        const st = S.data[w].start, xs = [], ys = [];
-        for (let i = 0; i < s.t.length; i++) { const dd = Math.round((s.t[i] - st) / DAY); if (dd >= 0) { xs.push(dd); ys.push(s.y[i]); } }
-        x = xs; y = ys;
-      } else x = s.t.map(isoDate);
-      npts += x.length;
-      const fullName = multiW && multiV ? `${w} · ${v.name}` : multiW ? w : v.name;
-      const name = stacked && multiW ? w : fullName;
-      const color = multiW ? wellColor(w) : PALETTE[vi % PALETTE.length];
-      const dash = multiW && multiV && !stacked ? DASHES[vi % DASHES.length] : multiW ? wellDash(w) : 'solid';
-      traces.push({
-        type: 'scatter', mode: p.style, x, y: y.map(v => Number.isFinite(v) ? v : null), name,
-        yaxis: vi === 0 ? 'y' : 'y' + (vi + 1), connectgaps: false,
-        legendgroup: stacked && multiW ? w : fullName, showlegend: !(stacked && multiW && vi > 0),
-        line: { color, width: 1.6, dash }, marker: { color, size: 5 },
-        hovertemplate: `%{y:,.4~g}<extra>${escapeHtml(fullName)}</extra>`,
-      });
-      exp.push({ name: fullName, x, y });
-    });
-  });
-  if (npts > 40000) traces.forEach(t => { t.type = 'scattergl'; });
-  if (traces.length > 10) traces.forEach(t => { t.hovertemplate = `${escapeHtml(t.name)}: %{y:,.4~g}<extra></extra>`; });
-
-  const L = baseLayout(p);
-  L.xaxis = { ...AXIS, type: xm === 'aligned' ? 'linear' : 'date', title: xm === 'aligned' ? { text: 'Days since first oil' } : undefined };
-  layoutYAxes(p, vars, L, multiW, traces);
-  L.hovermode = traces.length <= 10 ? 'x unified' : 'closest';
-  L.uirevision = `${p.id}|${xm}|${p.axisMode}|` + JSON.stringify(vars.map(v => [v.name, v.side, v.log, v.min, v.max]));
-  const shade = flagShapes(p, xm);
-  L.shapes = shade.shapes;
-  if (shade.label) {
-    const right = p.axisMode === 'stacked' && vars[0] && vars[0].side === 'R' ? false : p.axisMode === 'stacked';
-    L.annotations = (L.annotations || []).concat([{ xref: 'paper', yref: 'paper', x: right ? 1 : 0, xanchor: right ? 'right' : 'left',
-      y: 1, yanchor: 'bottom', showarrow: false, text: shade.label, font: { size: 11, color: '#5d6672' } }]);
-  }
-  L.margin.t = p.axisMode === 'stacked' ? 26 : shade.label ? 30 : 18;
-  const synced = S.settings.sync && S.xrange && S.xrange[xm];
-  if (synced) { L.xaxis.range = S.xrange[xm].slice(); L.xaxis.autorange = false; }
-
-  // CSV: wide table on union of x
-  const keys = new Map();
-  exp.forEach((tr, ti) => tr.x.forEach((xv, i) => {
-    if (!keys.has(xv)) keys.set(xv, new Array(exp.length).fill(''));
-    const v = tr.y[i]; keys.get(xv)[ti] = Number.isFinite(v) ? v : '';
-  }));
-  const sorted = [...keys.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  S.exports[p.id] = { header: [xm === 'aligned' ? 'Day' : 'Date', ...exp.map(e => e.name)], rows: sorted.map(k => [k, ...keys.get(k)]) };
-
-  return { traces, layout: L, empty: !traces.length ? 'Select at least one well and one variable.' : '' };
-}
-
-axisRange.n = 0;
-/** Manual min/max → explicit full range. The missing bound comes from the plotted data (ys), because
-    Plotly's partial autorange ('min'/'max') is unreliable together with automargin redraws. */
-function axisRange(v, ys) {
-  const num = x => (x === '' || x === null || x === undefined || !Number.isFinite(+x)) ? null : +x;
-  const tr = x => x === null ? null : v.log ? (x > 0 ? Math.log10(x) : null) : x;
-  let lo = tr(num(v.min)), hi = tr(num(v.max));
-  if (lo === null && hi === null) return {};
-  if (lo === null || hi === null) {
-    let dmin = Infinity, dmax = -Infinity;
-    for (const y of ys) {
-      const t = tr(y);
-      if (t === null || !Number.isFinite(t)) continue;
-      if (t < dmin) dmin = t;
-      if (t > dmax) dmax = t;
-    }
-    if (dmin > dmax) return {};
-    if (lo === null) lo = Math.min(dmin, hi) - 0.05 * Math.abs(hi - Math.min(dmin, hi) || 1);
-    if (hi === null) hi = Math.max(dmax, lo) + 0.05 * Math.abs(Math.max(dmax, lo) - lo || 1);
-  }
-  // fresh per-axis uirevision so a stored GUI state never overrides the manual range
-  return { range: [lo, hi], autorange: false, uirevision: `fixed-${++axisRange.n}` };
-}
-
-/** One y-axis per variable. Overlay: axes side by side; stacked: one track per variable sharing x. */
-function layoutYAxes(p, vars, L, multiW, traces) {
-  const ysOf = vi => {
-    const id = vi === 0 ? 'y' : 'y' + (vi + 1), out = [];
-    for (const t of traces) if (t.yaxis === id) for (const y of t.y) if (y !== null) out.push(y);
-    return out;
-  };
-  const key = i => i === 0 ? 'yaxis' : 'yaxis' + (i + 1);
-  const n = vars.length;
-  const tint = vi => multiW ? '#5d6672' : PALETTE[vi % PALETTE.length];
-  const base = (v, vi) => ({
-    ...AXIS, type: v.log ? 'log' : 'linear', side: v.side === 'R' ? 'right' : 'left',
-    title: { text: axisTitle([v.name]), font: { size: 11, color: tint(vi) }, standoff: 6 },
-    tickfont: { size: 10, color: tint(vi) }, showline: true, linecolor: multiW ? '#c5cbd4' : tint(vi),
-    ...axisRange(v, (v.min !== '' && v.max !== '') ? [] : ysOf(vi)),
-  });
-  if (!n) { L.yaxis = { ...AXIS }; return; }
-  if (p.axisMode === 'stacked') {
-    const H = Math.max(HEIGHTS[p.height] || HEIGHTS.M, n * 150 + 80);
-    L.height = H;
-    const gap = Math.min(0.08, 26 / H), h = (1 - gap * (n - 1)) / n;
-    L.annotations = L.annotations || [];
-    vars.forEach((v, vi) => {
-      const top = 1 - vi * (h + gap);
-      // track label sits horizontally above the track; a vertical title would spill into neighbours
-      L[key(vi)] = { ...base(v, vi), domain: [Math.max(0, top - h), top], anchor: 'x', title: { text: '' } };
-      L.annotations.push({ xref: 'paper', yref: 'paper', x: v.side === 'R' ? 1 : 0, xanchor: v.side === 'R' ? 'right' : 'left',
-        y: top, yanchor: 'bottom', showarrow: false, text: `<b>${escapeHtml(axisTitle([v.name]))}</b>`,
-        font: { size: 11, color: tint(vi) } });
-    });
-    L.xaxis.anchor = n === 1 ? 'y' : 'y' + n;
-    const anyR = vars.some(v => v.side === 'R'), anyL = vars.some(v => v.side !== 'R');
-    L.margin.l = anyL ? 70 : 24; L.margin.r = anyR ? 70 : 24;
-    return;
-  }
-  // overlay: innermost axis of each side anchors to the plot edge; the rest float outward
-  const lefts = [], rights = [];
-  vars.forEach((v, vi) => (v.side === 'R' ? rights : lefts).push(vi));
-  const card = cardEl(p.id), el = card && card.querySelector('.chart');
-  const width = Math.max(320, (el && el.clientWidth) || 900);
-  const f = Math.min(0.14, 64 / (width - 120));
-  const d0 = Math.max(0, lefts.length - 1) * f, d1 = 1 - Math.max(0, rights.length - 1) * f;
-  L.xaxis.domain = [Math.min(d0, 0.6), Math.max(d1, 0.4)];
-  vars.forEach((v, vi) => {
-    const isR = v.side === 'R', k = (isR ? rights : lefts).indexOf(vi);
-    const ax = { ...base(v, vi), showgrid: vi === 0 };
-    if (vi > 0) ax.overlaying = 'y';
-    if (k === 0) ax.anchor = 'x';
-    else { ax.anchor = 'free'; ax.position = isR ? Math.min(1, L.xaxis.domain[1] + k * f) : Math.max(0, L.xaxis.domain[0] - k * f); }
-    L[key(vi)] = ax;
-  });
-  L.margin.l = lefts.length ? 64 : 24; L.margin.r = rights.length ? 64 : 24;
-}
-
-function flagShapes(p, xm) {
-  const f = p.flag || {};
-  if (!f.var) return { shapes: [] };
-  const w = f.well && S.data[f.well] ? f.well : p.wells.find(x => S.data[x]);
-  const W = w && S.data[w];
-  const col = W && W.cols[f.var];
-  if (!col) return { shapes: [] };
-  const val = +f.value;
-  const tx = t => xm === 'aligned' ? (t - W.start) / DAY : isoDate(t);
-  const shapes = [];
-  let start = null;
-  for (let i = 0; i <= W.n; i++) {
-    const on = i < W.n && col[i] === val;
-    if (on && start === null) start = W.t[i];
-    if (!on && start !== null) {
-      shapes.push({ type: 'rect', xref: 'x', yref: 'paper', x0: tx(start), x1: tx(W.t[i - 1] + DAY), y0: 0, y1: 1,
-        fillcolor: 'rgba(110,118,130,0.16)', line: { width: 0 }, layer: 'below' });
-      start = null;
-    }
-  }
-  return { shapes, label: `Shaded: ${f.var} = ${val}  (${w})` };
-}
-
-function inRange(t, p) {
-  const from = p.from ? Date.parse(p.from) : -Infinity;
-  const to = p.to ? Date.parse(p.to) + DAY - 1 : Infinity;
-  return t >= from && t <= to;
-}
-
-function renderXP(p) {
-  const traces = [], rows = [];
-  const wells = p.wells.filter(w => S.data[w]);
-  const byTime = p.colorBy === 'time';
-  let ymin = Infinity, ymax = -Infinity;
-  wells.forEach(w => {
-    const sx = getSeries(w, p.x), sy = getSeries(w, p.y);
-    if (!sx || !sy) return;
-    const X = [], Y = [], D = [], C = [];
-    for (let i = 0; i < sx.t.length; i++) {
-      const xv = sx.y[i], yv = sy.y[i], t = sx.t[i];
-      if (!Number.isFinite(xv) || !Number.isFinite(yv) || !inRange(t, p)) continue;
-      if ((p.logX && xv <= 0) || (p.logY && yv <= 0)) continue;
-      const dt = new Date(t);
-      const yr = dt.getUTCFullYear() + (t - Date.UTC(dt.getUTCFullYear(), 0, 1)) / (365.25 * DAY);
-      X.push(xv); Y.push(yv); D.push(isoDate(t)); C.push(yr);
-      ymin = Math.min(ymin, yr); ymax = Math.max(ymax, yr);
-      rows.push([w, isoDate(t), xv, yv]);
-    }
-    const sym = byTime ? SYMBOLS[wellIndex(w) % SYMBOLS.length] : 'circle';
-    traces.push({
-      type: X.length > 8000 ? 'scattergl' : 'scatter', mode: 'markers', name: w, x: X, y: Y, customdata: D,
-      marker: byTime ? { color: C, coloraxis: 'coloraxis', size: 6, symbol: sym, opacity: 0.75 }
-                     : { color: wellColor(w), size: 6, opacity: 0.6, line: { width: 0 } },
-      hovertemplate: `<b>${escapeHtml(w)}</b> %{customdata}<br>${escapeHtml(p.x)}: %{x:,.4~g}<br>${escapeHtml(p.y)}: %{y:,.4~g}<extra></extra>`,
-    });
-  });
-  const L = baseLayout(p);
-  L.xaxis = { ...AXIS, title: { text: `${p.x}${varUnit(p.x) ? ' [' + varUnit(p.x) + ']' : ''}` }, type: p.logX ? 'log' : 'linear' };
-  L.yaxis = { ...AXIS, title: { text: `${p.y}${varUnit(p.y) ? ' [' + varUnit(p.y) + ']' : ''}` }, type: p.logY ? 'log' : 'linear' };
-  L.hovermode = 'closest';
-  L.uirevision = `${p.id}|${p.x}|${p.y}|${p.logX}|${p.logY}`;
-  if (byTime && Number.isFinite(ymin)) {
-    L.coloraxis = { colorscale: [[0, '#c9ddf5'], [0.5, '#2a78d6'], [1, '#0b2f5e']], cmin: ymin, cmax: ymax,
-      colorbar: { title: { text: 'Year' }, thickness: 12, tickformat: 'd' } };
-  }
-  S.exports[p.id] = { header: ['Well', 'Date', p.x, p.y], rows };
-  const has = traces.some(t => t.x.length);
-  return { traces, layout: L, empty: has ? '' : 'No overlapping data for the selected wells / variables / period.' };
-}
-
-const STAT_FN = {
-  mean: a => a.reduce((s, v) => s + v, 0) / a.length,
-  median: a => { const b = [...a].sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; },
-  sum: a => a.reduce((s, v) => s + v, 0),
-  max: a => a.reduce((m, v) => v > m ? v : m, -Infinity),
-  min: a => a.reduce((m, v) => v < m ? v : m, Infinity),
-  last: a => a[a.length - 1],
-  p90: a => { const b = [...a].sort((x, y) => x - y); return b[Math.min(b.length - 1, Math.floor(0.9 * (b.length - 1)))]; },
-};
-const STAT_LABEL = { mean: 'Mean', median: 'Median', sum: 'Sum (daily values)', max: 'Max', min: 'Min', last: 'Last value', p90: 'P90' };
-
-function renderST(p) {
-  const wells = p.wells.filter(w => S.data[w]);
-  const traces = [];
-  const L = baseLayout(p);
-  L.hovermode = 'closest';
-  L.uirevision = `${p.id}|${p.chart}|${p.var}|${p.stat}`;
-  const vals = {};
-  wells.forEach(w => {
-    const s = getSeries(w, p.var, { res: 'D', noMA: true });
-    if (!s) return;
-    const a = [], d = [];
-    for (let i = 0; i < s.t.length; i++) if (Number.isFinite(s.y[i]) && inRange(s.t[i], p)) { a.push(s.y[i]); d.push(isoDate(s.t[i])); }
-    vals[w] = { a, d };
-  });
-  const unit = varUnit(p.var);
-  if (p.chart === 'box') {
-    const rows = [];
-    wells.forEach(w => {
-      if (!vals[w] || !vals[w].a.length) return;
-      traces.push({ type: 'box', name: w, y: vals[w].a, boxpoints: 'outliers', boxmean: true,
-        marker: { color: wellColor(w), size: 3, opacity: 0.6 }, line: { width: 1.5 }, showlegend: false });
-      vals[w].a.forEach((v, i) => rows.push([w, vals[w].d[i], v]));
-    });
-    L.yaxis = { ...AXIS, title: { text: `${p.var}${unit ? ' [' + unit + ']' : ''}` }, type: p.logY ? 'log' : 'linear' };
-    L.xaxis = { ...AXIS, type: 'category' };
-    S.exports[p.id] = { header: ['Well', 'Date', p.var], rows };
-  } else {
-    const X = [], Y = [], C = [], N = [];
-    wells.forEach(w => {
-      const a = vals[w] && vals[w].a;
-      if (!a || !a.length) return;
-      X.push(w); Y.push(STAT_FN[p.stat](a)); C.push(wellColor(w)); N.push(a.length);
-    });
-    traces.push({ type: 'bar', x: X, y: Y, customdata: N, marker: { color: C, line: { width: 0 } },
-      texttemplate: '%{y:,.3~s}', textposition: 'outside', cliponaxis: false,
-      hovertemplate: `<b>%{x}</b><br>${STAT_LABEL[p.stat]}: %{y:,.4~g}<br>n = %{customdata} days<extra></extra>` });
-    L.yaxis = { ...AXIS, title: { text: `${STAT_LABEL[p.stat]} of ${p.var}${unit ? ' [' + unit + ']' : ''}` }, type: p.logY ? 'log' : 'linear' };
-    L.xaxis = { ...AXIS, type: 'category' };
-    L.bargap = 0.35;
-    S.exports[p.id] = { header: ['Well', `${STAT_LABEL[p.stat]} of ${p.var}`, 'Days'], rows: X.map((w, i) => [w, Y[i], N[i]]) };
-  }
-  const has = traces.some(t => (t.y || []).length);
-  return { traces, layout: L, empty: has ? '' : 'No data for the selected wells / period.' };
-}
-
-function renderPlot(p) {
-  const card = cardEl(p.id);
-  if (!card || !S.wells.length) return;
-  const el = card.querySelector('.chart');
-  const msg = card.querySelector('.chart-msg');
-  const r = p.type === 'ts' ? renderTS(p) : p.type === 'xp' ? renderXP(p) : renderST(p);
-  msg.textContent = r.empty || '';
-  msg.classList.toggle('on', !!r.empty);
-  const H = r.layout.height || HEIGHTS[p.height] || HEIGHTS.M;
-  el.style.height = H + 'px';
-  card.querySelector('.cfg').style.maxHeight = H + 8 + 'px';
-  Plotly.react(el, r.traces, r.layout, plotConfig(p));
-  if (!el._bgBound) {
-    el._bgBound = true;
-    el.on('plotly_relayout', ev => onRelayout(p.id, ev));
-  }
-}
-
-function onRelayout(id, ev) {
-  if (S.syncing || !S.settings.sync) return;
-  const p = plotById(id);
-  if (!p || p.type !== 'ts') return;
-  let range = null, auto = false;
-  if (ev['xaxis.autorange']) auto = true;
-  else if (ev['xaxis.range[0]'] !== undefined) range = [ev['xaxis.range[0]'], ev['xaxis.range[1]']];
-  else if (Array.isArray(ev['xaxis.range'])) range = ev['xaxis.range'];
-  else return;
-  S.xrange = S.xrange || {};
-  S.xrange[p.xmode] = auto ? null : range;
-  S.syncing = true;
-  const jobs = [];
-  for (const q of S.plots) {
-    if (q.id === p.id || q.type !== 'ts' || q.xmode !== p.xmode) continue;
-    const el = cardEl(q.id) && cardEl(q.id).querySelector('.chart');
-    if (el && el.data) jobs.push(Plotly.relayout(el, auto ? { 'xaxis.autorange': true } : { 'xaxis.range': range.slice() }));
-  }
-  Promise.all(jobs).finally(() => { S.syncing = false; });
-}
-
-/* ================= plot config model ================= */
-function hasVar(n) { return S.allVars.includes(n); }
-function mkVar(name, side = 'L') { return { name, side, log: false, min: '', max: '' }; }
-function firstVar(...cands) { return cands.find(hasVar) || S.allVars[0]; }
-
-function newPlot(type, extra = {}) {
-  const id = S.nextId++;
-  const base = { id, type, title: `${TYPE_LABEL[type]} ${id}`, height: 'M', collapsed: false };
-  if (type === 'ts') Object.assign(base, {
-    wells: S.wells.slice(0, 1), vars: [mkVar(firstVar('Prod_Oil_rate_bbld'))],
-    xmode: 'date', axisMode: 'overlay', style: 'lines', flag: { var: '', well: '', value: 0 },
-  });
-  if (type === 'xp') Object.assign(base, {
-    wells: S.wells.slice(), x: firstVar('Inj_Steam_rate_bbld'), y: firstVar('Prod_Oil_rate_bbld'),
-    colorBy: 'well', logX: false, logY: false, from: '', to: '',
-  });
-  if (type === 'st') Object.assign(base, {
-    wells: S.wells.slice(), var: firstVar('Prod_Oil_rate_bbld'), stat: 'mean', chart: 'bar', logY: false, from: '', to: '',
-  });
-  return Object.assign(base, extra);
-}
-
-function sanitize(p) {
-  p.wells = (p.wells || []).filter(w => S.data[w]);
-  if (!p.wells.length && S.wells.length) p.wells = p.type === 'ts' ? [S.wells[0]] : S.wells.slice();
-  if (p.type === 'ts') {
-    p.axisMode = p.axisMode || 'overlay';
-    // migrate v1 layouts ({axis:'L'|'R'} + plot-level logL/logR) to per-variable axes
-    p.vars = (p.vars || []).filter(v => hasVar(v.name)).map(v => ({
-      name: v.name, side: v.side || v.axis || 'L',
-      log: v.log !== undefined ? !!v.log : !!(v.axis === 'R' ? p.logR : p.logL),
-      min: v.min ?? '', max: v.max ?? '',
-    }));
-    delete p.logL; delete p.logR;
-    if (!p.vars.length) p.vars = [mkVar(firstVar('Prod_Oil_rate_bbld'))];
-    p.flag = p.flag || { var: '', well: '', value: 0 };
-    if (p.flag.var && !hasVar(p.flag.var)) p.flag.var = '';
-    if (p.flag.well && !S.data[p.flag.well]) p.flag.well = '';
-  }
-  if (p.type === 'xp') { if (!hasVar(p.x)) p.x = firstVar('Inj_Steam_rate_bbld'); if (!hasVar(p.y)) p.y = firstVar('Prod_Oil_rate_bbld'); }
-  if (p.type === 'st') { if (!hasVar(p.var)) p.var = firstVar('Prod_Oil_rate_bbld'); }
-}
-
-function defaultPlots() {
-  S.plots = [];
-  const w0 = S.wells[0];
-  const v = [];
-  if (hasVar('Prod_Oil_rate_bbld')) v.push(mkVar('Prod_Oil_rate_bbld', 'L'));
-  if (hasVar('Inj_Steam_rate_bbld')) v.push(mkVar('Inj_Steam_rate_bbld', 'R'));
-  if (hasVar('SOR')) v.push(mkVar('SOR', 'R'));
-  S.plots.push(newPlot('ts', { title: `${w0} – Production & SOR`, vars: v.length ? v : undefined }));
-  S.plots[0].vars = S.plots[0].vars || [mkVar(S.allVars[0])];
-  S.plots.push(newPlot('ts', { title: 'Oil rate – all wells', wells: S.wells.slice(), vars: [mkVar(firstVar('Prod_Oil_rate_bbld'))] }));
-  S.settings.res = S.settings.res || 'D';
-  rebuildAll();
-  persist();
-}
-
-function plotById(id) { return S.plots.find(p => p.id === id); }
-function cardEl(id) { return document.querySelector(`.card[data-id="${id}"]`); }
-
-/* ================= layout save / load ================= */
-function layoutSnapshot() {
-  return {
-    app: 'SAGD_Prod_Viewer', version: 1, savedAt: new Date().toISOString(), sourceFile: S.fileName,
-    settings: { ...S.settings },
-    plots: S.plots.map(p => JSON.parse(JSON.stringify(p))),
-  };
-}
-function persist() { try { localStorage.setItem(STORE_KEY, JSON.stringify(layoutSnapshot())); } catch (e) { /* storage unavailable */ } }
-
-function applyLayout(cfg, quiet) {
-  if (!cfg || !Array.isArray(cfg.plots)) { toast('Not a valid layout file.', true); return; }
-  Object.assign(S.settings, cfg.settings || {});
-  S.plots = cfg.plots.filter(p => TYPE_LABEL[p.type]).map(p => ({ ...p }));
-  S.nextId = Math.max(0, ...S.plots.map(p => +p.id || 0)) + 1;
-  S.plots.forEach((p, i) => { if (!p.id) p.id = S.nextId + i; });
-  S.nextId = Math.max(...S.plots.map(p => p.id), 0) + 1;
-  S.plots.forEach(sanitize);
-  S.xrange = {};
-  syncToolbar();
-  rebuildAll();
-  persist();
-  if (!quiet) toast(`Layout applied: ${S.plots.length} plots`);
-}
-
-function saveLayoutFile() {
-  const blob = new Blob([JSON.stringify(layoutSnapshot(), null, 2)], { type: 'application/json' });
-  download(`sagd_viewer_layout_${new Date().toISOString().slice(0, 10)}.json`, blob);
-}
-
-async function loadLayoutFile(file) {
-  try {
-    const cfg = JSON.parse(await file.text());
-    if (!S.wells.length) { S.pendingLayout = cfg; toast('Layout stored — it will be applied when an Excel file is opened.'); return; }
-    applyLayout(cfg);
-  } catch (e) { toast('Could not read layout: ' + e.message, true); }
-}
-
-/* ================= DOM building ================= */
+/* ================= small helpers ================= */
 function $(sel, root = document) { return root.querySelector(sel); }
 function h(tag, attrs = {}, ...kids) {
   const el = document.createElement(tag);
@@ -1201,281 +631,17 @@ function h(tag, attrs = {}, ...kids) {
     if (v === undefined || v === null || v === false) continue;
     if (k === 'class') el.className = v;
     else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
-    else if (k === 'value') el.value = v;
-    else if (k === 'checked') el.checked = !!v;
     else el.setAttribute(k, v === true ? '' : v);
   }
-  for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) el.append(c instanceof Node ? c : document.createTextNode(c));
+  for (const c of kids.flat()) if (c !== null && c !== undefined) el.append(c);
   return el;
 }
+function isoDate(ms) { return new Date(ms).toISOString().slice(0, 10); }
+function parseIso(s) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) : NaN; }
 function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
-function safeName(s) { return String(s || 'plot').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'plot'; }
-
-function varGroup(n) {
-  if (S.derived[n]) return S.derived[n].group || 'Derived';
-  if (S.flagCols.has(n)) return 'Operation flags';
-  if (/^Prod_|Production_Hours/i.test(n)) return 'Production';
-  if (/Inj|Blanket/i.test(n)) return 'Injection';
-  if (/Pressure|Choke/i.test(n)) return 'Pressure / Choke';
-  if (/Frequency|Current|Torque|Emulsion/i.test(n)) return 'ESP / Pump';
-  if (/Subcool/i.test(n)) return 'Subcool';
-  if (/Temp|WHT/i.test(n)) return 'Temperature';
-  return 'Other';
-}
-const GROUP_ORDER = ['Production', 'Derived', 'Injection', 'Pressure / Choke', 'ESP / Pump', 'Temperature', 'Subcool', 'Operation flags', 'Other'];
-
-function varSelect(value, onChange, { placeholder, only } = {}) {
-  const sel = h('select', { onchange: () => onChange(sel.value) });
-  if (placeholder) sel.append(h('option', { value: '' }, placeholder));
-  const groups = {};
-  for (const v of (only || S.allVars)) (groups[varGroup(v)] = groups[varGroup(v)] || []).push(v);
-  for (const g of GROUP_ORDER) {
-    if (!groups[g]) continue;
-    const og = h('optgroup', { label: g });
-    groups[g].forEach(v => og.append(h('option', { value: v }, v)));
-    sel.append(og);
-  }
-  sel.value = value || '';
-  return sel;
-}
-
-function seg(options, value, onChange, small) {
-  const el = h('div', { class: 'seg' + (small ? ' small' : '') });
-  for (const [v, label] of options) {
-    el.append(h('button', { class: String(v) === String(value) ? 'on' : '', type: 'button', onclick: () => onChange(v) }, label));
-  }
-  return el;
-}
-
-function section(title, links, ...body) {
-  const head = h('h4', {}, title);
-  if (links) head.append(h('span', { class: 'links' }, ...links));
-  return h('div', {}, head, ...body);
-}
-
-function wellPicker(p, update) {
-  const chips = h('div', { class: 'chips' });
-  for (const w of S.wells) {
-    const on = p.wells.includes(w);
-    const chip = h('span', { class: 'chip' + (on ? ' on' : ''), title: w, onclick: () => {
-      const set = new Set(p.wells);
-      set.has(w) ? set.delete(w) : set.add(w);
-      p.wells = S.wells.filter(x => set.has(x));
-      update(true);
-    } }, h('span', { class: 'dot', style: `background:${wellColor(w)}` }), w);
-    chips.append(chip);
-  }
-  const prefixes = [...new Set(S.wells.map(w => (w.match(/^[A-Za-z]+/) || [''])[0]).filter(Boolean))];
-  const links = [h('a', { onclick: () => { p.wells = S.wells.slice(); update(true); } }, 'All'),
-    h('a', { onclick: () => { p.wells = []; update(true); } }, 'None')];
-  if (prefixes.length > 1 && prefixes.length <= 6) {
-    prefixes.forEach(pre => links.push(h('a', { title: `Only ${pre}-wells`, onclick: () => {
-      p.wells = S.wells.filter(w => w.startsWith(pre)); update(true);
-    } }, `${pre}*`)));
-  }
-  return section(`Wells (${p.wells.length}/${S.wells.length})`, links, chips);
-}
-
-function heightRow(p, update) {
-  return h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'Height'),
-    seg([['S', 'S'], ['M', 'M'], ['L', 'L'], ['XL', 'XL']], p.height, v => { p.height = v; update(true); }, true));
-}
-
-function dateRangeRows(p, update) {
-  const from = h('input', { type: 'date', value: p.from || '', onchange: () => { p.from = from.value; update(false); } });
-  const to = h('input', { type: 'date', value: p.to || '', onchange: () => { p.to = to.value; update(false); } });
-  return section('Period', [h('a', { onclick: () => { p.from = ''; p.to = ''; update(true); } }, 'All')],
-    h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'From'), from),
-    h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'To    '), to));
-}
-
-function buildCfg(p) {
-  const update = (rebuild) => { persist(); if (rebuild) fillCfg(p); renderPlot(p); };
-  const parts = [];
-  if (p.type === 'ts') {
-    parts.push(wellPicker(p, update));
-    const single = p.wells.length <= 1;
-    const num = (val, ph, set) => h('input', { type: 'number', step: 'any', placeholder: ph, value: val,
-      onchange: e => { set(e.target.value); update(false); } });
-    const rows = p.vars.map((v, i) => h('div', { class: 'varblock' },
-      h('div', { class: 'varrow' },
-        h('span', { class: 'swatch', style: single ? `background:${PALETTE[i % PALETTE.length]}` : '' }),
-        varSelect(v.name, val => { v.name = val; update(true); }),
-        h('button', { class: 'xbtn', title: 'Remove', onclick: () => { p.vars.splice(i, 1); update(true); } }, '×')),
-      h('div', { class: 'varopt' },
-        seg([['L', 'Left'], ['R', 'Right']], v.side, a => { v.side = a; update(true); }, true),
-        h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: v.log, onchange: e => { v.log = e.target.checked; update(false); } }), 'Log'),
-        num(v.min, 'min', x => { v.min = x; }), num(v.max, 'max', x => { v.max = x; }))));
-    rows.push(h('div', { class: 'varrow' }, varSelect('', val => {
-      if (val) { p.vars.push(mkVar(val, p.vars.length % 2 ? 'R' : 'L')); update(true); }
-    }, { placeholder: '+ Add variable (new axis)…' })));
-    parts.push(section('Variables  (one y-axis each)', null, ...rows,
-      h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'Y axes'),
-        seg([['overlay', 'Overlay'], ['stacked', 'Stacked tracks']], p.axisMode, m => { p.axisMode = m; update(true); }, true)),
-      h('div', { class: 'note' }, 'Leave min / max empty for auto. Overlay places axes side by side; Stacked gives each variable its own track.')));
-    parts.push(section('X axis', null, seg([['date', 'Calendar date'], ['aligned', 'Days since first oil']], p.xmode, v => { p.xmode = v; update(true); }, true)));
-    parts.push(section('Display', null,
-      h('div', { class: 'row' }, seg([['lines', 'Lines'], ['markers', 'Markers'], ['lines+markers', 'Both']], p.style, v => { p.style = v; update(true); }, true)),
-      heightRow(p, update)));
-    const flags = S.rawCols.filter(c => S.flagCols.has(c));
-    const f = p.flag;
-    const wellSel = h('select', { onchange: e => { f.well = e.target.value; update(false); } },
-      h('option', { value: '' }, `First selected well`), ...S.wells.map(w => h('option', { value: w }, w)));
-    wellSel.value = f.well || '';
-    parts.push(section('Background shading', null,
-      h('div', { class: 'row' }, varSelect(f.var, v => { f.var = v; update(true); }, { placeholder: 'None', only: flags })),
-      f.var ? h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'when ='), seg([[0, '0'], [1, '1']], f.value, v => { f.value = v; update(true); }, true), wellSel) : null,
-      h('div', { class: 'note' }, 'Shades periods where the selected 0/1 flag equals the chosen value.')));
-  }
-  if (p.type === 'xp') {
-    parts.push(wellPicker(p, update));
-    parts.push(section('Axes', null,
-      h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'X'), varSelect(p.x, v => { p.x = v; update(true); })),
-      h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'Y'), varSelect(p.y, v => { p.y = v; update(true); })),
-      h('div', { class: 'row' }, h('button', { class: 'btn', type: 'button', onclick: () => { [p.x, p.y] = [p.y, p.x]; update(true); } }, '⇄ Swap X/Y')),
-      h('div', { class: 'row' },
-        h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: p.logX, onchange: e => { p.logX = e.target.checked; update(false); } }), 'Log X'),
-        h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: p.logY, onchange: e => { p.logY = e.target.checked; update(false); } }), 'Log Y'))));
-    parts.push(section('Color by', null, seg([['well', 'Well'], ['time', 'Time (year)']], p.colorBy, v => { p.colorBy = v; update(true); }, true),
-      h('div', { class: 'note' }, 'Uses the global resolution and moving average. "Time" colors points by date; wells are told apart by marker shape.')));
-    parts.push(dateRangeRows(p, update));
-    parts.push(section('Size', null, heightRow(p, update)));
-  }
-  if (p.type === 'st') {
-    parts.push(wellPicker(p, update));
-    const statSel = h('select', { onchange: e => { p.stat = e.target.value; update(false); } },
-      ...Object.entries(STAT_LABEL).map(([k, l]) => h('option', { value: k }, l)));
-    statSel.value = p.stat;
-    parts.push(section('Variable', null,
-      h('div', { class: 'row' }, varSelect(p.var, v => { p.var = v; update(true); })),
-      h('div', { class: 'row' }, seg([['bar', 'Bar (statistic)'], ['box', 'Box (distribution)']], p.chart, v => { p.chart = v; update(true); }, true)),
-      p.chart === 'bar' ? h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'Statistic'), statSel) : null,
-      h('div', { class: 'row' }, h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: p.logY, onchange: e => { p.logY = e.target.checked; update(false); } }), 'Log Y')),
-      h('div', { class: 'note' }, 'Computed from daily values within the period. Shut-in / zero filters apply; moving average and resolution do not.')));
-    parts.push(dateRangeRows(p, update));
-    parts.push(section('Size', null, heightRow(p, update)));
-  }
-  return parts;
-}
-
-function fillCfg(p) {
-  const cfg = cardEl(p.id).querySelector('.cfg');
-  const scroll = cfg.scrollTop;
-  cfg.replaceChildren(...buildCfg(p));
-  cfg.scrollTop = scroll;
-}
-
-function buildCard(p) {
-  const title = h('input', { class: 'title', type: 'text', value: p.title, title: 'Click to rename',
-    onchange: () => { p.title = title.value; persist(); } });
-  const card = h('section', { class: 'card' + (p.collapsed ? ' collapsed' : ''), 'data-id': p.id },
-    h('div', { class: 'card-head' },
-      title,
-      h('span', { class: 'badge' }, TYPE_LABEL[p.type]),
-      h('div', { class: 'icons' },
-        h('button', { class: 'ibtn' + (p.collapsed ? '' : ' on'), title: 'Show / hide settings', onclick: e => {
-          p.collapsed = !p.collapsed; card.classList.toggle('collapsed', p.collapsed); e.currentTarget.classList.toggle('on', !p.collapsed);
-          persist(); resizeChart(p.id);
-        } }, '⚙ Settings'),
-        h('button', { class: 'ibtn', title: 'Move up', onclick: () => movePlot(p.id, -1) }, '↑'),
-        h('button', { class: 'ibtn', title: 'Move down', onclick: () => movePlot(p.id, 1) }, '↓'),
-        h('button', { class: 'ibtn', title: 'Duplicate', onclick: () => duplicatePlot(p.id) }, '⧉ Copy'),
-        h('button', { class: 'ibtn', title: 'Download PNG', onclick: () => exportPNG(p) }, 'PNG'),
-        h('button', { class: 'ibtn', title: 'Download plotted data as CSV', onclick: () => exportCSV(p) }, 'CSV'),
-        h('button', { class: 'ibtn danger', title: 'Delete plot', onclick: () => removePlot(p.id) }, '✕'))),
-    h('div', { class: 'card-body' },
-      h('aside', { class: 'cfg' }),
-      h('div', { class: 'chart-wrap' }, h('div', { class: 'chart' }), h('div', { class: 'chart-msg' }))));
-  return card;
-}
-
-function addCard(p, scroll) {
-  const card = buildCard(p);
-  $('#plots').append(card);
-  fillCfg(p);
-  renderPlot(p);
-  if (scroll) card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function rebuildAll() {
-  // no Plotly.purge here: a pending automargin redraw would then hit a cleared _fullLayout and throw
-  $('#plots').replaceChildren();
-  $('#plots').className = 'plots cols-' + (S.settings.cols || 1);
-  S.plots.forEach(p => addCard(p));
-}
-
-function renderAll() { S.plots.forEach(renderPlot); }
-// re-render (not just resize): overlay axis offsets depend on the chart width
-function resizeChart(id) { setTimeout(() => { const p = plotById(id); if (p) renderPlot(p); }, 30); }
-
-function movePlot(id, dir) {
-  const i = S.plots.findIndex(p => p.id === id), j = i + dir;
-  if (j < 0 || j >= S.plots.length) return;
-  [S.plots[i], S.plots[j]] = [S.plots[j], S.plots[i]];
-  const a = cardEl(id), b = cardEl(S.plots[i].id);
-  dir < 0 ? b.before(a) : b.after(a);
-  persist();
-  a.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-function duplicatePlot(id) {
-  const src = plotById(id);
-  const p = JSON.parse(JSON.stringify(src));
-  p.id = S.nextId++;
-  p.title = src.title + ' (copy)';
-  S.plots.splice(S.plots.indexOf(src) + 1, 0, p);
-  const card = buildCard(p);
-  cardEl(id).after(card);
-  fillCfg(p); renderPlot(p); persist();
-  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-function removePlot(id) {
-  const c = cardEl(id);
-  if (c) c.remove();
-  S.plots = S.plots.filter(p => p.id !== id);
-  delete S.exports[id];
-  persist();
-}
-
-/* ================= export ================= */
-function download(name, blob) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = name;
-  document.body.append(a);
-  a.click();
-  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
-}
-function exportPNG(p) {
-  const el = cardEl(p.id).querySelector('.chart');
-  Plotly.downloadImage(el, { format: 'png', filename: safeName(p.title), width: el.clientWidth, height: el.clientHeight, scale: 2 });
-}
-function exportCSV(p) {
-  const ex = S.exports[p.id];
-  if (!ex || !ex.rows.length) { toast('Nothing to export.', true); return; }
-  const esc = v => { const s = typeof v === 'number' ? String(v) : String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
-  const meta = `# ${p.title} | file: ${S.fileName} | resolution: ${S.settings.res} | MA: ${S.settings.ma} | exclude shut-in: ${S.settings.excludeShutin} | zero as gap: ${S.settings.zeroGap}`;
-  const lines = [meta, ex.header.map(esc).join(','), ...ex.rows.map(r => r.map(esc).join(','))];
-  download(`${safeName(p.title)}.csv`, new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
-}
-
-/* ================= toolbar & global events ================= */
-function syncToolbar() {
-  const st = S.settings;
-  document.querySelectorAll('#resSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === st.res));
-  document.querySelectorAll('#colSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === String(st.cols)));
-  $('#maSel').value = String(st.ma);
-  $('#shutinChk').checked = !!st.excludeShutin;
-  $('#zeroChk').checked = !!st.zeroGap;
-  $('#syncChk').checked = st.sync !== false;
-}
-function setSetting(k, v) {
-  S.settings[k] = v;
-  syncToolbar();
-  persist();
-  if (k === 'cols') { $('#plots').className = 'plots cols-' + v; S.plots.forEach(p => resizeChart(p.id)); return; }
-  if (k === 'sync') { S.xrange = {}; return; }
-  renderAll();
-}
+function fmt(v) { return Number.isFinite(v) ? (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(1)) : '–'; }
+function num(x) { return x === '' || x === null || x === undefined || !Number.isFinite(+x) ? null : +x; }
+function addMonths(ms, k) { const d = new Date(ms); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + k, d.getUTCDate()); }
 
 let toastTimer;
 function toast(msg, err) {
@@ -1487,38 +653,459 @@ function toast(msg, err) {
 }
 function showLoading(msg) { $('#loadingMsg').textContent = msg; $('#loading').classList.add('on'); }
 function hideLoading() { $('#loading').classList.remove('on'); }
+function download(name, blob) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.append(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+function persist() {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(P.settings));
+    localStorage.setItem(MD_KEY, JSON.stringify(P.md));
+  } catch (e) { /* storage unavailable */ }
+}
+function restore(key) { try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; } }
+
+/* ================= loading ================= */
+async function loadExcel(file) {
+  showLoading(`Reading ${file.name} (${(file.size / 1048576).toFixed(1)} MB)…`);
+  const t0 = performance.now();
+  try {
+    const sheets = await readWorkbook(file, msg => { $('#loadingMsg').textContent = msg; });
+    if (!sheets.length) throw new Error('No sheet with a date column and data rows was found.');
+    ingest(file.name, sheets);
+    toast(`Loaded ${P.wells.length} wells in ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+  } catch (e) {
+    console.error(e);
+    toast('Failed to read file: ' + (e.message || e), true);
+  } finally {
+    hideLoading();
+  }
+}
+
+function ingest(fileName, sheets) {
+  const pts = new Set();
+  for (const sh of sheets) for (const c of sh.header) {
+    const m = /^(Temp|Subcool)_Point_(\d+)$/i.exec(c);
+    if (m) pts.add(+m[2]);
+  }
+  if (!pts.size) throw new Error('No Temp_Point_n / Subcool_Point_n columns found.');
+  P.fileName = fileName;
+  P.points = [...pts].sort((a, b) => a - b);
+  P.wells = sheets.map(s => s.name);
+  P.data = {};
+  P.tmin = Infinity; P.tmax = -Infinity;
+  for (const sh of sheets) {
+    P.data[sh.name] = { t: sh.t, cols: sh.cols, n: sh.t.length };
+    P.tmin = Math.min(P.tmin, sh.t[0]); P.tmax = Math.max(P.tmax, sh.t[sh.t.length - 1]);
+  }
+  P.cache.clear();
+
+  // settings: keep what still applies from the last session
+  const st = P.settings, saved = restore(STORE_KEY);
+  if (saved) Object.assign(st, saved);
+  P.md = restore(MD_KEY) || {};
+  if (!P.data[st.well]) st.well = P.wells.find(w => hasAnyData(w, 'Temp')) || P.wells[0];
+  st.wells = (st.wells || []).filter(w => P.data[w]);
+  if (!st.wells.length) st.wells = P.wells.slice();
+  if (!(st.cur >= P.tmin && st.cur <= P.tmax)) st.cur = P.tmax;
+  st.dates = (st.dates || []).filter(d => d >= P.tmin && d <= P.tmax);
+  if (!saved || !saved.dates || !saved.dates.length) st.dates = snapshots(12, 5);
+
+  $('#fileInfo').textContent = `${fileName}  ·  ${P.wells.length} wells  ·  ${P.points.length} points  ·  ${isoDate(P.tmin)} → ${isoDate(P.tmax)}`;
+  $('#fileInfo').title = $('#fileInfo').textContent;
+  $('#toolbar').setAttribute('aria-disabled', 'false');
+  $('#emptyState').classList.add('hidden');
+  $('#main').classList.remove('hidden');
+  const slider = $('#slider');
+  slider.max = String(Math.round((P.tmax - P.tmin) / DAY));
+  $('#dateInput').min = isoDate(P.tmin);
+  $('#dateInput').max = isoDate(P.tmax);
+  $('#wellSel').replaceChildren(...P.wells.map(w => h('option', { value: w }, w)));
+  syncToolbar();
+  renderAll();
+}
+
+/* ================= data ================= */
+function colName(v, k) { return `${v}_Point_${k}`; }
+
+/** Cleaned, trailing-averaged daily values for every point: { t, y: [Float64Array per point] }. */
+function profileSeries(well, v) {
+  const st = P.settings, key = `${well}|${v}|${st.avg}|${st.clean}`;
+  if (P.cache.has(key)) return P.cache.get(key);
+  const W = P.data[well];
+  const y = P.points.map(k => {
+    const src = W.cols[colName(v, k)];
+    const out = new Float64Array(W.n).fill(NaN);
+    if (!src) return out;
+    const temp = W.cols[colName('Temp', k)];
+    for (let i = 0; i < W.n; i++) {
+      let x = src[i];
+      if (st.clean && temp) {
+        // a dead thermocouple logs 0 °C, which also turns its subcool into Tsat − 0
+        if (!(temp[i] > 0)) x = NaN;
+        // Tsat = T + subcool cannot exceed water's critical temperature
+        else if (v === 'Subcool' && temp[i] + x > TSAT_MAX) x = NaN;
+      }
+      out[i] = x;
+    }
+    if (st.avg > 1) {
+      const sm = new Float64Array(W.n);
+      let sum = 0, n = 0;
+      for (let i = 0; i < W.n; i++) {
+        if (Number.isFinite(out[i])) { sum += out[i]; n++; }
+        if (i >= st.avg) { const o = out[i - st.avg]; if (Number.isFinite(o)) { sum -= o; n--; } }
+        sm[i] = n ? sum / n : NaN;
+      }
+      return sm;
+    }
+    return out;
+  });
+  const res = { t: W.t, y };
+  P.cache.set(key, res);
+  return res;
+}
+
+function hasAnyData(well, v) {
+  const s = profileSeries(well, v);
+  return s.y.some(a => a.some(Number.isFinite));
+}
+
+/** Row index of `ms` in a well's daily series, or -1 when the well has no row for that day. */
+function rowAt(well, ms) {
+  const t = P.data[well].t;
+  let lo = 0, hi = t.length - 1;
+  if (ms < t[0] - DAY / 2 || ms > t[hi] + DAY / 2) return -1;
+  while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (t[mid] <= ms + DAY / 2) lo = mid; else hi = mid - 1; }
+  return Math.abs(t[lo] - ms) < DAY ? lo : -1;
+}
+
+function profileAt(well, v, ms) {
+  const i = rowAt(well, ms);
+  if (i < 0) return null;
+  const y = profileSeries(well, v).y.map(a => a[i]);
+  return y.some(Number.isFinite) ? y : null;
+}
+
+/** Position of each point: MD when every point of `well` has one, else the point number. */
+function positionsFor(well) {
+  const md = P.md[well];
+  if (P.settings.axis === 'md' && md && P.points.every((_, j) => Number.isFinite(md[j]))) return { x: P.points.map((_, j) => md[j]), md: true };
+  return { x: P.points.slice(), md: false };
+}
+
+/** 2nd–98th percentile of every value of the given wells (used for color and axis bounds). */
+function valueRange(wells, v) {
+  const all = [];
+  for (const w of wells) for (const a of profileSeries(w, v).y) for (const x of a) if (Number.isFinite(x)) all.push(x);
+  if (!all.length) return null;
+  all.sort((a, b) => a - b);
+  const q = p => all[Math.min(all.length - 1, Math.max(0, Math.round(p * (all.length - 1))))];
+  return { lo: q(0.02), hi: q(0.98), min: all[0], max: all[all.length - 1] };
+}
+
+function userRange(auto) {
+  const lo = num(P.settings.vmin), hi = num(P.settings.vmax);
+  if (lo === null && hi === null) return auto;
+  return [lo ?? auto[0], hi ?? auto[1]];
+}
+
+/** Kept dates: `count` steps of `months` going back from the current date, within the well's data. */
+function snapshots(months, count) {
+  const st = P.settings, out = [];
+  for (let k = 1; k <= count; k++) {
+    const d = addMonths(st.cur, -months * k);
+    if (d < P.tmin) break;
+    if (P.data[st.well] && !profileAt(st.well, st.v, d)) continue;
+    out.push(d);
+  }
+  return out.sort((a, b) => a - b);
+}
+
+/* ================= rendering ================= */
+function renderAll() {
+  renderProfile();
+  renderHeat();
+  renderCfg();
+  syncTime();
+}
+
+function unitLabel() { return `${VARS[P.settings.v].label} [°C]`; }
+
+function renderProfile() {
+  const st = P.settings, v = st.v, traces = [], exp = [];
+  let wells, lines, missing = [];
+  if (st.mode === 'wells') {
+    wells = st.wells.filter(w => P.data[w]);
+    lines = wells.map(w => ({ well: w, ms: st.cur, name: w, color: PALETTE[P.wells.indexOf(w) % PALETTE.length], width: 2 }));
+  } else {
+    wells = [st.well];
+    lines = st.dates.filter(d => d !== st.cur).map((d, i) => ({ well: st.well, ms: d, name: isoDate(d), color: PALETTE[i % PALETTE.length], width: 1.6, dash: 'dot' }));
+    lines.push({ well: st.well, ms: st.cur, name: `${isoDate(st.cur)} (current)`, color: '#1b1f24', width: 3 });
+  }
+  // MD only when every plotted well has it, so all lines share one position axis
+  const useMD = st.axis === 'md' && wells.length && wells.every(w => positionsFor(w).md);
+  for (const ln of lines) {
+    const y = profileAt(ln.well, v, ln.ms);
+    if (!y) { missing.push(ln.name); continue; }
+    const x = useMD ? positionsFor(ln.well).x : P.points.slice();
+    traces.push({
+      type: 'scatter', mode: 'lines+markers', x, y: y.map(z => Number.isFinite(z) ? z : null), name: ln.name,
+      customdata: P.points, connectgaps: false,
+      line: { color: ln.color, width: ln.width, dash: ln.dash || 'solid' }, marker: { color: ln.color, size: ln.width > 2 ? 8 : 6 },
+      hovertemplate: `Point %{customdata}${useMD ? ' · MD %{x}' : ''}<br>%{y:.1f} °C<extra>${escapeHtml(ln.name)}</extra>`,
+    });
+    exp.push({ name: ln.name, y });
+  }
+  const rng = valueRange(wells, v);
+  const L = {
+    height: 440, margin: { l: 64, r: 24, t: 18, b: 48 },
+    paper_bgcolor: '#ffffff', plot_bgcolor: '#ffffff',
+    font: { family: 'Segoe UI, system-ui, sans-serif', size: 12, color: '#1b1f24' },
+    legend: { orientation: 'h', x: 0, y: -0.16, yanchor: 'top', font: { size: 11 } },
+    hovermode: 'closest',
+    xaxis: { ...AXIS, title: { text: useMD ? 'MD [m]' : 'Thermocouple point' }, autorange: st.reverse ? 'reversed' : true,
+             ...(useMD ? {} : { tickmode: 'array', tickvals: P.points, ticktext: P.points.map(String) }) },
+    yaxis: { ...AXIS, title: { text: unitLabel() } },
+    uirevision: `${st.mode}|${st.well}|${v}|${useMD}|${st.reverse}`,
+  };
+  // fixed value axis so the lines don't jump while stepping through time
+  if (rng) {
+    const pad = 0.04 * (rng.max - rng.min || 1);
+    L.yaxis.range = userRange([rng.min - pad, rng.max + pad]);
+    L.yaxis.autorange = false;
+  }
+  if (st.axis === 'md' && !useMD) {
+    L.annotations = [{ xref: 'paper', yref: 'paper', x: 1, y: 1, xanchor: 'right', yanchor: 'bottom', showarrow: false,
+      text: 'MD not set for every plotted well — showing point numbers', font: { size: 11, color: '#c63b3a' } }];
+    L.margin.t = 28;
+  }
+  $('#profTitle').textContent = st.mode === 'wells'
+    ? `${VARS[v].label} profile · ${isoDate(st.cur)} · ${wells.length} wells`
+    : `${VARS[v].label} profile · ${st.well}`;
+  const msg = traces.length ? '' : st.mode === 'wells' && !wells.length ? 'Select at least one well.'
+    : `No ${VARS[v].label.toLowerCase()} data on ${isoDate(st.cur)}.`;
+  $('#profMsg').textContent = msg;
+  $('#profMsg').classList.toggle('on', !!msg);
+  P.missing = missing;
+  P.exportRows = { useMD, exp, x: useMD ? positionsFor(wells[0]).x : null };
+  Plotly.react('profChart', traces, L, { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'],
+    toImageButtonOptions: { filename: `${st.mode === 'wells' ? 'wells_' + isoDate(st.cur) : st.well}_${v}_profile`, scale: 2 } });
+}
+
+function renderHeat() {
+  const st = P.settings, v = st.v, well = st.well;
+  const s = profileSeries(well, v), pos = positionsFor(well);
+  const x = Array.from(s.t, isoDate);
+  const z = s.y.map(a => Array.from(a, q => Number.isFinite(q) ? q : null));
+  const rng = valueRange([well], v);
+  const [zmin, zmax] = rng ? userRange([rng.lo, rng.hi]) : [undefined, undefined];
+  const trace = {
+    type: 'heatmap', x, y: pos.x, z, zmin, zmax, colorscale: VARS[v].colorscale, zsmooth: false, hoverongaps: false,
+    colorbar: { title: { text: '°C', side: 'right' }, thickness: 12, len: 0.9 },
+    hovertemplate: `%{x}<br>${pos.md ? 'MD' : 'Point'} %{y}<br>%{z:.1f} °C<extra></extra>`,
+  };
+  const L = {
+    height: 360, margin: { l: 64, r: 24, t: 12, b: 40 },
+    paper_bgcolor: '#ffffff', plot_bgcolor: '#f4f5f7',
+    font: { family: 'Segoe UI, system-ui, sans-serif', size: 12, color: '#1b1f24' },
+    xaxis: { ...AXIS, type: 'date' },
+    yaxis: { ...AXIS, title: { text: pos.md ? 'MD [m]' : 'Thermocouple point' }, autorange: st.reverse ? 'reversed' : true,
+             ...(pos.md ? {} : { tickmode: 'array', tickvals: P.points, ticktext: P.points.map(String) }) },
+    shapes: timeShapes(),
+    uirevision: `${well}|${pos.md}|${st.reverse}`,
+  };
+  $('#heatTitle').textContent = `${VARS[v].label} · time × position · ${well}`;
+  const empty = !z.some(r => r.some(q => q !== null));
+  $('#heatMsg').textContent = empty ? `No ${VARS[v].label.toLowerCase()} data for ${well}.` : '';
+  $('#heatMsg').classList.toggle('on', empty);
+  const el = $('#heatChart');
+  Plotly.react(el, [trace], L, { responsive: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d', 'select2d', 'autoScale2d'],
+    toImageButtonOptions: { filename: `${well}_${v}_map`, scale: 2 } });
+  if (!el._clickBound) {
+    el._clickBound = true;
+    el.on('plotly_click', ev => { const pt = ev.points && ev.points[0]; if (pt) setCur(parseIso(String(pt.x))); });
+  }
+}
+
+function timeShapes() {
+  const st = P.settings, line = (ms, dash, color, width) => ({ type: 'line', xref: 'x', yref: 'paper', x0: isoDate(ms), x1: isoDate(ms), y0: 0, y1: 1,
+    line: { color, width, dash } });
+  const out = st.mode === 'dates' ? st.dates.filter(d => d !== st.cur).map(d => line(d, 'dash', '#4c4c4c', 1)) : [];
+  out.push(line(st.cur, 'solid', '#1b1f24', 2));
+  return out;
+}
+
+/** Left-hand panel of the profile card: kept dates or well picker, plus a readout at the current date. */
+function renderCfg() {
+  const st = P.settings, box = $('#profCfg');
+  const parts = [];
+  if (st.mode === 'dates') {
+    const kept = st.dates.filter(d => d !== st.cur);
+    parts.push(h('div', {},
+      h('h4', {}, 'Kept dates', h('span', { class: 'links' },
+        h('a', { onclick: () => { st.dates = snapshots(12, 5); afterDates(); } }, 'Yearly'),
+        h('a', { onclick: () => { st.dates = snapshots(6, 6); afterDates(); } }, '6 months'),
+        h('a', { onclick: () => { st.dates = []; afterDates(); } }, 'Clear'))),
+      h('div', { class: 'chips' },
+        kept.map((d, i) => h('span', { class: 'datechip' },
+          h('span', { class: 'dot', style: `background:${PALETTE[i % PALETTE.length]}` }),
+          h('a', { title: 'Make this the current date', style: 'cursor:pointer', onclick: () => setCur(d) }, isoDate(d)),
+          h('button', { class: 'xbtn', title: 'Remove', onclick: () => { st.dates = st.dates.filter(x => x !== d); afterDates(); } }, '×'))),
+        h('span', { class: 'datechip cur' }, h('span', { class: 'dot', style: 'background:#1b1f24' }), isoDate(st.cur))),
+      kept.length ? null : h('div', { class: 'note' }, 'Use “+ Keep date” below the chart, or the Yearly / 6 months shortcuts, to overlay more dates.')));
+  } else {
+    parts.push(h('div', {},
+      h('h4', {}, 'Wells', h('span', { class: 'links' },
+        h('a', { onclick: () => { st.wells = P.wells.slice(); afterWells(); } }, 'All'),
+        h('a', { onclick: () => { st.wells = []; afterWells(); } }, 'None'))),
+      h('div', { class: 'chips' }, P.wells.map(w => {
+        const on = st.wells.includes(w);
+        return h('span', { class: 'chip' + (on ? ' on' : ''), onclick: () => {
+          st.wells = on ? st.wells.filter(x => x !== w) : P.wells.filter(x => x === w || st.wells.includes(x));
+          afterWells();
+        } }, h('span', { class: 'dot', style: `background:${PALETTE[P.wells.indexOf(w) % PALETTE.length]}` }), w);
+      }))));
+  }
+  if (P.missing && P.missing.length) parts.push(h('div', { class: 'note' }, `No data: ${P.missing.join(', ')}`));
+
+  // context at the current date for the well shown in the map
+  const W = P.data[st.well], i = rowAt(st.well, st.cur);
+  const rows = CONTEXT_COLS.filter(([c]) => W.cols[c]).map(([c, label, unit]) =>
+    h('tr', {}, h('td', {}, label), h('td', { class: 'num' }, i < 0 ? '–' : fmt(W.cols[c][i])), h('td', { class: 'unit' }, unit)));
+  if (rows.length) parts.push(h('div', {}, h('h4', {}, `${st.well} · ${isoDate(st.cur)}`), h('table', { class: 'ctx' }, rows)));
+  box.replaceChildren(...parts);
+}
+
+function afterDates() { P.settings.dates.sort((a, b) => a - b); persist(); renderProfile(); renderCfg(); updateShapes(); }
+function afterWells() { persist(); renderProfile(); renderCfg(); }
+
+function updateShapes() { Plotly.relayout('heatChart', { shapes: timeShapes() }); }
+
+/* ================= time control ================= */
+function syncTime() {
+  const st = P.settings;
+  $('#slider').value = String(Math.round((st.cur - P.tmin) / DAY));
+  $('#dateInput').value = isoDate(st.cur);
+}
+
+function setCur(ms) {
+  if (!Number.isFinite(ms)) return;
+  const st = P.settings;
+  st.cur = Math.min(P.tmax, Math.max(P.tmin, Math.round(ms / DAY) * DAY));
+  syncTime();
+  renderProfile();
+  renderCfg();
+  updateShapes();
+  persist();
+}
+
+function step(dir) { setCur(P.settings.cur + dir * P.settings.step * DAY); }
+
+function togglePlay() {
+  const btn = $('#playBtn');
+  if (P.playing) { clearInterval(P.playing); P.playing = null; btn.textContent = '▶ Play'; return; }
+  if (P.settings.cur >= P.tmax) setCur(P.tmin);
+  btn.textContent = '❚❚ Pause';
+  P.playing = setInterval(() => { if (P.settings.cur >= P.tmax) togglePlay(); else step(1); }, 120);
+}
+
+/* ================= MD editor ================= */
+function renderMD() {
+  const st = P.settings, md = P.md[st.well] || [];
+  $('#mdWell').textContent = st.well;
+  $('#mdGrid').replaceChildren(...P.points.map((k, j) => h('label', {}, `P${k}`,
+    h('input', { type: 'number', step: 'any', value: Number.isFinite(md[j]) ? md[j] : '', onchange: e => {
+      const arr = P.md[st.well] || (P.md[st.well] = []);
+      const x = num(e.target.value);
+      arr[j] = x === null ? null : x;
+      persist();
+      renderAll();
+    } }))));
+}
+
+/* ================= export ================= */
+function exportCSV() {
+  const ex = P.exportRows;
+  if (!ex || !ex.exp.length) { toast('Nothing to export.', true); return; }
+  const st = P.settings;
+  const header = ['Point', ...(ex.useMD ? ['MD_m'] : []), ...ex.exp.map(e => e.name)];
+  const rows = P.points.map((k, j) => [k, ...(ex.useMD ? [ex.x[j]] : []), ...ex.exp.map(e => Number.isFinite(e.y[j]) ? e.y[j] : '')]);
+  const meta = `# ${VARS[st.v].label} profile | file: ${P.fileName} | ${st.mode === 'wells' ? 'date: ' + isoDate(st.cur) : 'well: ' + st.well} | average: ${st.avg} d | clean: ${st.clean}`;
+  const esc = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const lines = [meta, header.map(esc).join(','), ...rows.map(r => r.map(esc).join(','))];
+  const name = `${st.mode === 'wells' ? 'wells_' + isoDate(st.cur) : st.well}_${st.v}_profile.csv`;
+  download(name, new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+}
+
+/* ================= toolbar & events ================= */
+function syncToolbar() {
+  const st = P.settings;
+  const seg = (id, val) => document.querySelectorAll(`#${id} button`).forEach(b => b.classList.toggle('on', b.dataset.v === String(val)));
+  seg('varSeg', st.v); seg('avgSeg', st.avg); seg('axisSeg', st.axis); seg('modeSeg', st.mode);
+  $('#wellSel').value = st.well;
+  $('#revChk').checked = !!st.reverse;
+  $('#cleanChk').checked = !!st.clean;
+  $('#vmin').value = st.vmin; $('#vmax').value = st.vmax;
+  $('#stepSel').value = String(st.step);
+}
+
+function setSetting(k, v) {
+  P.settings[k] = v;
+  if (k === 'avg' || k === 'clean') P.cache.clear();
+  syncToolbar();
+  persist();
+  if (k === 'well' && !$('#mdPanel').hidden) renderMD();
+  renderAll();
+}
 
 function handleFiles(files) {
   for (const f of files) {
-    if (/\.json$/i.test(f.name)) loadLayoutFile(f);
-    else if (/\.(xlsx|xlsm|xls|xlsb|csv)$/i.test(f.name)) { loadExcel(f); }
+    if (/\.(xlsx|xlsm|xls|xlsb|csv)$/i.test(f.name)) loadExcel(f);
     else toast(`Unsupported file: ${f.name}`, true);
   }
 }
 
 function init() {
+  const saved = restore(STORE_KEY);
+  if (saved) Object.assign(P.settings, saved);
   syncToolbar();
   $('#fileInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#fileInput2').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
-  $('#cfgInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
-  $('#saveCfg').addEventListener('click', saveLayoutFile);
-  document.querySelectorAll('#resSeg button').forEach(b => b.addEventListener('click', () => setSetting('res', b.dataset.v)));
-  document.querySelectorAll('#colSeg button').forEach(b => b.addEventListener('click', () => setSetting('cols', +b.dataset.v)));
-  $('#maSel').addEventListener('change', e => setSetting('ma', +e.target.value));
-  $('#shutinChk').addEventListener('change', e => setSetting('excludeShutin', e.target.checked));
-  $('#zeroChk').addEventListener('change', e => setSetting('zeroGap', e.target.checked));
-  $('#syncChk').addEventListener('change', e => setSetting('sync', e.target.checked));
-  document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => {
-    const p = newPlot(b.dataset.add);
-    S.plots.push(p);
-    addCard(p, true);
+  $('#wellSel').addEventListener('change', e => setSetting('well', e.target.value));
+  const seg = (id, key, conv = x => x) => document.querySelectorAll(`#${id} button`).forEach(b => b.addEventListener('click', () => setSetting(key, conv(b.dataset.v))));
+  seg('varSeg', 'v'); seg('avgSeg', 'avg', Number); seg('axisSeg', 'axis'); seg('modeSeg', 'mode');
+  $('#revChk').addEventListener('change', e => setSetting('reverse', e.target.checked));
+  $('#cleanChk').addEventListener('change', e => setSetting('clean', e.target.checked));
+  $('#vmin').addEventListener('change', e => setSetting('vmin', e.target.value));
+  $('#vmax').addEventListener('change', e => setSetting('vmax', e.target.value));
+  $('#stepSel').addEventListener('change', e => { P.settings.step = +e.target.value; persist(); });
+  $('#slider').addEventListener('input', e => setCur(P.tmin + (+e.target.value) * DAY));
+  $('#dateInput').addEventListener('change', e => setCur(parseIso(e.target.value)));
+  $('#prevBtn').addEventListener('click', () => step(-1));
+  $('#nextBtn').addEventListener('click', () => step(1));
+  $('#playBtn').addEventListener('click', togglePlay);
+  $('#pinBtn').addEventListener('click', () => {
+    const st = P.settings;
+    if (st.mode !== 'dates') setSetting('mode', 'dates');
+    if (!st.dates.includes(st.cur)) st.dates.push(st.cur);
+    afterDates();
+  });
+  $('#csvBtn').addEventListener('click', exportCSV);
+  $('#mdBtn').addEventListener('click', () => { const p = $('#mdPanel'); p.hidden = !p.hidden; if (!p.hidden) renderMD(); });
+  $('#mdClose').addEventListener('click', () => { $('#mdPanel').hidden = true; });
+  $('#mdClear').addEventListener('click', () => { delete P.md[P.settings.well]; persist(); renderMD(); renderAll(); });
+  $('#mdCopy').addEventListener('click', () => {
+    const src = P.md[P.settings.well];
+    if (!src) { toast('Enter MD values for this well first.', true); return; }
+    for (const w of P.wells) P.md[w] = src.slice();
     persist();
-  }));
-
-  let rzTimer;
-  window.addEventListener('resize', () => {
-    clearTimeout(rzTimer);
-    rzTimer = setTimeout(() => S.plots.filter(p => p.type === 'ts' && p.axisMode !== 'stacked' && p.vars.length > 2).forEach(renderPlot), 200);
+    toast(`MD copied to ${P.wells.length} wells`);
+    renderAll();
   });
 
   // drag & drop anywhere

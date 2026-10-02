@@ -1,0 +1,32 @@
+/* ---------- profile viewer (on top of app.css) ---------- */
+.hidden { display: none !important; }
+code { font-size: 12px; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
+.card-head .title.static { flex: 1; padding: 3px 6px; }
+.card-head .seg.small button { padding: 3px 9px; }
+.note.pad { color: var(--faint); font-size: 11.5px; padding: 0 12px 10px; }
+.znum { width: 70px; padding: 3px 6px; border: 1px solid var(--border-strong); border-radius: 6px; }
+
+.timebar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 8px 12px; border-top: 1px solid var(--border); background: var(--surface-2);
+}
+.timebar input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
+.timebar .ibtn { font-size: 13px; }
+
+.mdpanel { padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+.mdhead { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.mdgrid { display: flex; flex-wrap: wrap; gap: 6px 10px; }
+.mdgrid label { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+.mdgrid input { width: 76px; padding: 3px 6px; border: 1px solid var(--border-strong); border-radius: 6px; }
+.mdpanel .note { color: var(--faint); font-size: 11.5px; margin-top: 6px; }
+
+.datechip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 8px; border-radius: 12px;
+  border: 1px solid var(--border-strong); background: var(--surface); font-size: 12px; }
+.datechip .dot { width: 9px; height: 9px; border-radius: 50%; }
+.datechip.cur { border-color: var(--text); font-weight: 600; padding-right: 8px; }
+.quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.quick a { color: var(--accent); cursor: pointer; font-size: 12px; }
+table.ctx { border-collapse: collapse; font-size: 12px; width: 100%; }
+table.ctx td { padding: 2px 4px; border-bottom: 1px solid var(--border); }
+table.ctx td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+table.ctx td.unit { color: var(--faint); width: 1%; white-space: nowrap; }

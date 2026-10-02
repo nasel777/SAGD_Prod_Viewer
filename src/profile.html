@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SAGD Profile Viewer</title>
+<style>
+/*@@CSS@@*/
+/*@@PROFILE_CSS@@*/
+</style>
+</head>
+<body>
+<div class="sticky">
+<header class="topbar">
+  <div class="brand">SAGD Profile Viewer</div>
+  <div class="file-info" id="fileInfo">No file loaded</div>
+  <div class="spacer"></div>
+  <a class="btn" href="SAGD_Prod_Viewer.html" title="Open the production viewer">Production Viewer ↗</a>
+  <label class="btn primary">Open Excel…<input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls,.csv" hidden></label>
+</header>
+
+<div class="toolbar" id="toolbar" aria-disabled="true">
+  <div class="tgroup">
+    <span class="tlabel">Well</span>
+    <select id="wellSel"></select>
+  </div>
+  <div class="tgroup">
+    <span class="tlabel">Variable</span>
+    <div class="seg" id="varSeg"><button data-v="Temp">Temperature</button><button data-v="Subcool">Subcool</button></div>
+  </div>
+  <div class="tgroup">
+    <span class="tlabel">Average</span>
+    <div class="seg" id="avgSeg"><button data-v="1">1 d</button><button data-v="7">7 d</button><button data-v="30">30 d</button></div>
+  </div>
+  <div class="tgroup">
+    <span class="tlabel">Position</span>
+    <div class="seg" id="axisSeg"><button data-v="idx">Point #</button><button data-v="md">MD</button></div>
+    <button class="btn" id="mdBtn">Edit MD…</button>
+  </div>
+  <div class="tgroup">
+    <span class="tlabel">Range</span>
+    <input type="number" id="vmin" placeholder="auto" class="znum" title="Lower bound for the profile value axis and the map colors">
+    <span class="tlabel">–</span>
+    <input type="number" id="vmax" placeholder="auto" class="znum" title="Upper bound for the profile value axis and the map colors">
+  </div>
+  <label class="chk"><input type="checkbox" id="revChk"> Reverse position axis</label>
+  <label class="chk"><input type="checkbox" id="cleanChk" checked> Clean values <span class="hint" title="Temp ≤ 0 °C marks a dead thermocouple: its temperature and subcool are hidden. Subcool is also hidden when Temp + Subcool &gt; 374 °C (above water's critical point).">(dead sensors, impossible subcool)</span></label>
+</div>
+
+<div class="mdpanel" id="mdPanel" hidden>
+  <div class="mdhead">
+    <b>Thermocouple MD</b> <span class="hint" id="mdWell"></span>
+    <div class="spacer"></div>
+    <button class="btn" id="mdCopy">Copy to all wells</button>
+    <button class="btn" id="mdClear">Clear</button>
+    <button class="btn primary" id="mdClose">Done</button>
+  </div>
+  <div class="mdgrid" id="mdGrid"></div>
+  <div class="note">Measured depth (m) of each point for the selected well. Stored in this browser only. Leave blank to plot by point number.</div>
+</div>
+</div>
+
+<div class="empty" id="emptyState">
+  <div class="drop-card">
+    <div class="drop-icon">⇪</div>
+    <h1>Drop the production Excel file here</h1>
+    <p>Each sheet is read as one well. Columns named <code>Temp_Point_1…n</code> and <code>Subcool_Point_1…n</code> are plotted as a profile along the wellbore.</p>
+    <p class="muted">Everything is processed locally in this browser. No data leaves your PC.</p>
+    <label class="btn primary big">Choose file…<input type="file" id="fileInput2" accept=".xlsx,.xlsm,.xls,.csv" hidden></label>
+  </div>
+</div>
+
+<main class="plots cols-1 hidden" id="main">
+  <section class="card">
+    <div class="card-head">
+      <div class="title static" id="profTitle">Profile</div>
+      <div class="seg small" id="modeSeg"><button data-v="dates">Compare dates</button><button data-v="wells">Compare wells</button></div>
+      <div class="icons"><button class="ibtn" id="csvBtn" title="Download the plotted profiles as CSV">CSV</button></div>
+    </div>
+    <div class="card-body">
+      <div class="cfg" id="profCfg"></div>
+      <div class="chart-wrap">
+        <div class="chart" id="profChart"></div>
+        <div class="chart-msg" id="profMsg"></div>
+      </div>
+    </div>
+    <div class="timebar">
+      <button class="ibtn" id="prevBtn" title="Step back">◀</button>
+      <button class="ibtn" id="playBtn" title="Play / pause">▶ Play</button>
+      <button class="ibtn" id="nextBtn" title="Step forward">▶</button>
+      <select id="stepSel" title="Step size">
+        <option value="1">1 day</option><option value="7" selected>7 days</option><option value="30">30 days</option>
+      </select>
+      <input type="range" id="slider" min="0" max="0" value="0">
+      <input type="date" id="dateInput">
+      <button class="btn" id="pinBtn" title="Keep this date as a profile line">+ Keep date</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <div class="title static" id="heatTitle">Time × position</div>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart" id="heatChart"></div>
+      <div class="chart-msg" id="heatMsg"></div>
+    </div>
+    <div class="note pad">Click the map to move the current date. Vertical lines mark the current date (solid) and kept dates (dashed).</div>
+  </section>
+</main>
+
+<div class="drag-overlay" id="dragOverlay"><div>Drop Excel (.xlsx)</div></div>
+<div class="loading" id="loading"><div class="spinner"></div><div id="loadingMsg">Reading workbook…</div></div>
+<div class="toast" id="toast"></div>
+
+<script id="xlsx-lib">
+/*@@XLSX@@*/
+</script>
+<script>
+/*@@PLOTLY@@*/
+</script>
+<script>
+/*@@READER@@*/
+</script>
+<script>
+/*@@PROFILE@@*/
+</script>
+</body>
+</html>
