@@ -1,5 +1,5 @@
 'use strict';
-/* BG Production Viewer — client-side Excel → Plotly viewer.
+/* SAGD Production Viewer — client-side Excel → Plotly viewer.
    Each sheet = one well. First "Date" column = daily timestamp. */
 
 const DAY = 86400000;
@@ -872,7 +872,7 @@ function cardEl(id) { return document.querySelector(`.card[data-id="${id}"]`); }
 /* ================= layout save / load ================= */
 function layoutSnapshot() {
   return {
-    app: 'BG_Prod_Viewer', version: 1, savedAt: new Date().toISOString(), sourceFile: S.fileName,
+    app: 'SAGD_Prod_Viewer', version: 1, savedAt: new Date().toISOString(), sourceFile: S.fileName,
     settings: { ...S.settings },
     plots: S.plots.map(p => JSON.parse(JSON.stringify(p))),
   };
@@ -896,7 +896,7 @@ function applyLayout(cfg, quiet) {
 
 function saveLayoutFile() {
   const blob = new Blob([JSON.stringify(layoutSnapshot(), null, 2)], { type: 'application/json' });
-  download(`bg_viewer_layout_${new Date().toISOString().slice(0, 10)}.json`, blob);
+  download(`sagd_viewer_layout_${new Date().toISOString().slice(0, 10)}.json`, blob);
 }
 
 async function loadLayoutFile(file) {
