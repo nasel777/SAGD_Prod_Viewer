@@ -1,0 +1,221 @@
+{
+  "app": "SAGD_Prod_Viewer",
+  "version": 1,
+  "savedAt": "2026-10-03T00:00:00.000Z",
+  "sourceFile": "integrated_data_20260916.xlsx",
+  "settings": {
+    "res": "D",
+    "ma": 7,
+    "excludeShutin": true,
+    "zeroGap": false,
+    "sync": true,
+    "cols": 1
+  },
+  "plots": [
+    {
+      "id": 1,
+      "type": "ts",
+      "title": "101_01 ① Production performance (oil, water cut, SOR)",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01"
+      ],
+      "vars": [
+        {
+          "name": "Prod_Oil_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Water_Cut_%",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "SOR",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 10
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "Oil_Operation",
+        "well": "101_01",
+        "value": 0
+      }
+    },
+    {
+      "id": 2,
+      "type": "ts",
+      "title": "101_01 ② ESP load vs throughput",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01"
+      ],
+      "vars": [
+        {
+          "name": "Frequency_Hz",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Current_Amp",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Torque_N/m",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Emulsion_Rate_Am3/h",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "Oil_Operation",
+        "well": "101_01",
+        "value": 0
+      }
+    },
+    {
+      "id": 3,
+      "type": "ts",
+      "title": "101_01 ③ Pressures on one scale (intake, casing, injection)",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01"
+      ],
+      "vars": [
+        {
+          "name": "Intake_Pressure_kPa",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 6500
+        },
+        {
+          "name": "Casing_Pressure_kPa",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 6500
+        },
+        {
+          "name": "Injection_Pressure_kPa",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 6500
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "Oil_Operation",
+        "well": "101_01",
+        "value": 0
+      }
+    },
+    {
+      "id": 4,
+      "type": "ts",
+      "title": "101_01 ④ Steam breakthrough watch (subcool, WHT, max temp)",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01"
+      ],
+      "vars": [
+        {
+          "name": "Subcool_Min",
+          "side": "L",
+          "log": false,
+          "min": -5,
+          "max": 60
+        },
+        {
+          "name": "WHT_Temp",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Temp_Max",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "Oil_Operation",
+        "well": "101_01",
+        "value": 0
+      }
+    },
+    {
+      "id": 5,
+      "type": "xp",
+      "title": "101_01 ⑤ ESP curve: emulsion rate vs frequency, by year",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01"
+      ],
+      "x": "Frequency_Hz",
+      "y": "Emulsion_Rate_Am3/h",
+      "colorBy": "time",
+      "logX": false,
+      "logY": false,
+      "from": "2019-01-01",
+      "to": ""
+    },
+    {
+      "id": 6,
+      "type": "xp",
+      "title": "101_01 ⑥ ESP load: current vs frequency, by year",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01"
+      ],
+      "x": "Frequency_Hz",
+      "y": "Current_Amp",
+      "colorBy": "time",
+      "logX": false,
+      "logY": false,
+      "from": "2019-01-01",
+      "to": ""
+    }
+  ]
+}
