@@ -22,6 +22,7 @@ const AXIS = { gridcolor: '#eceef1', linecolor: '#c5cbd4', zeroline: false, tick
 
 const P = {
   fileName: null,
+  sheets: [],          // parsed sheets as read, handed to the Production Viewer
   wells: [],
   data: {},            // well -> { t: Float64Array, cols: {name: Float64Array}, n }
   points: [],          // sorted point numbers found in Temp_/Subcool_Point_n columns
@@ -98,6 +99,21 @@ async function loadExcel(file) {
   }
 }
 
+/** Opened from the Production Viewer link: take the workbook that viewer already has loaded. */
+async function loadFromOpener() {
+  if (!window.opener) return;
+  showLoading('Receiving data from the Production Viewer…');
+  try {
+    const r = await receiveHandoff();
+    if (r) { ingest(r.fileName, r.sheets); toast(`Loaded ${P.wells.length} wells from the Production Viewer`); }
+  } catch (e) {
+    console.error(e);
+    toast('Could not use the data from the Production Viewer: ' + (e.message || e), true);
+  } finally {
+    hideLoading();
+  }
+}
+
 function ingest(fileName, sheets) {
   const pts = new Set();
   for (const sh of sheets) for (const c of sh.header) {
@@ -106,6 +122,7 @@ function ingest(fileName, sheets) {
   }
   if (!pts.size) throw new Error('No Temp_Point_n / Subcool_Point_n columns found.');
   P.fileName = fileName;
+  P.sheets = sheets;
   P.points = [...pts].sort((a, b) => a - b);
   P.wells = sheets.map(s => s.name);
   P.data = {};
@@ -487,6 +504,7 @@ function init() {
   syncToolbar();
   $('#fileInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#fileInput2').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
+  linkHandoff($('#prodLink'), () => P.wells.length ? { fileName: P.fileName, sheets: P.sheets } : null);
   $('#wellSel').addEventListener('change', e => setSetting('well', e.target.value));
   const seg = (id, key, conv = x => x) => document.querySelectorAll(`#${id} button`).forEach(b => b.addEventListener('click', () => setSetting(key, conv(b.dataset.v))));
   seg('varSeg', 'v'); seg('avgSeg', 'avg', Number); seg('axisSeg', 'axis'); seg('modeSeg', 'mode');
@@ -532,3 +550,4 @@ function init() {
 }
 
 init();
+loadFromOpener();

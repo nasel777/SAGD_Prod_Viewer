@@ -216,7 +216,7 @@ table.ctx td.unit { color: var(--faint); width: 1%; white-space: nowrap; }
   <div class="brand">SAGD Profile Viewer</div>
   <div class="file-info" id="fileInfo">No file loaded</div>
   <div class="spacer"></div>
-  <a class="btn" href="SAGD_Prod_Viewer.html" title="Open the production viewer">Production Viewer ↗</a>
+  <a class="btn" id="prodLink" href="SAGD_Prod_Viewer.html" title="Open the production viewer (with the loaded data)">Production Viewer ↗</a>
   <label class="btn primary">Open Excel…<input type="file" id="fileInput" accept=".xlsx,.xlsm,.xls,.csv" hidden></label>
 </header>
 
@@ -585,6 +585,47 @@ async function readWorkbook(file, onStatus) {
   return sheets;
 }
 
+/* ================= hand-off between viewers =================
+   A link opens the other viewer in a new tab; that tab asks its opener for the workbook
+   already loaded here, so it shows the data without reading the Excel file again.
+   Works on file:// pages too: postMessage needs no shared origin or storage. */
+const HANDOFF = 'sagd-viewer-handoff';
+
+/** Make `link` open its page in a new tab that receives getPayload() → {fileName, sheets}, when not null. */
+function linkHandoff(link, getPayload) {
+  const children = new Set();
+  window.addEventListener('message', e => {
+    const m = e.data;
+    if (!m || m.type !== HANDOFF || !m.ask || !children.has(e.source)) return;
+    const payload = getPayload();
+    e.source.postMessage(payload ? { type: HANDOFF, fileName: payload.fileName, sheets: payload.sheets } : { type: HANDOFF, none: true }, '*');
+  });
+  link.addEventListener('click', e => {
+    if (!getPayload()) return; // nothing loaded: plain navigation
+    const win = window.open(link.href, '_blank');
+    if (!win) return; // popup blocked: fall back to the plain link
+    e.preventDefault();
+    children.add(win);
+  });
+}
+
+/** If this tab was opened by the other viewer, ask it for its data. Resolves {fileName, sheets} or null. */
+function receiveHandoff(timeoutMs = 3000) {
+  const parent = window.opener;
+  if (!parent || parent === window) return Promise.resolve(null);
+  return new Promise(resolve => {
+    const done = v => { clearTimeout(timer); window.removeEventListener('message', onMsg); resolve(v); };
+    const onMsg = e => {
+      const m = e.data;
+      if (e.source !== parent || !m || m.type !== HANDOFF || m.ask) return;
+      done(m.none ? null : { fileName: m.fileName, sheets: m.sheets });
+    };
+    const timer = setTimeout(() => done(null), timeoutMs);
+    window.addEventListener('message', onMsg);
+    try { parent.postMessage({ type: HANDOFF, ask: true }, '*'); } catch (err) { done(null); }
+  });
+}
+
 </script>
 <script>
 'use strict';
@@ -611,6 +652,7 @@ const AXIS = { gridcolor: '#eceef1', linecolor: '#c5cbd4', zeroline: false, tick
 
 const P = {
   fileName: null,
+  sheets: [],          // parsed sheets as read, handed to the Production Viewer
   wells: [],
   data: {},            // well -> { t: Float64Array, cols: {name: Float64Array}, n }
   points: [],          // sorted point numbers found in Temp_/Subcool_Point_n columns
@@ -687,6 +729,21 @@ async function loadExcel(file) {
   }
 }
 
+/** Opened from the Production Viewer link: take the workbook that viewer already has loaded. */
+async function loadFromOpener() {
+  if (!window.opener) return;
+  showLoading('Receiving data from the Production Viewer…');
+  try {
+    const r = await receiveHandoff();
+    if (r) { ingest(r.fileName, r.sheets); toast(`Loaded ${P.wells.length} wells from the Production Viewer`); }
+  } catch (e) {
+    console.error(e);
+    toast('Could not use the data from the Production Viewer: ' + (e.message || e), true);
+  } finally {
+    hideLoading();
+  }
+}
+
 function ingest(fileName, sheets) {
   const pts = new Set();
   for (const sh of sheets) for (const c of sh.header) {
@@ -695,6 +752,7 @@ function ingest(fileName, sheets) {
   }
   if (!pts.size) throw new Error('No Temp_Point_n / Subcool_Point_n columns found.');
   P.fileName = fileName;
+  P.sheets = sheets;
   P.points = [...pts].sort((a, b) => a - b);
   P.wells = sheets.map(s => s.name);
   P.data = {};
@@ -1076,6 +1134,7 @@ function init() {
   syncToolbar();
   $('#fileInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#fileInput2').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
+  linkHandoff($('#prodLink'), () => P.wells.length ? { fileName: P.fileName, sheets: P.sheets } : null);
   $('#wellSel').addEventListener('change', e => setSetting('well', e.target.value));
   const seg = (id, key, conv = x => x) => document.querySelectorAll(`#${id} button`).forEach(b => b.addEventListener('click', () => setSetting(key, conv(b.dataset.v))));
   seg('varSeg', 'v'); seg('avgSeg', 'avg', Number); seg('axisSeg', 'axis'); seg('modeSeg', 'mode');
@@ -1121,6 +1180,7 @@ function init() {
 }
 
 init();
+loadFromOpener();
 
 </script>
 </body>

@@ -232,3 +232,44 @@ async function readWorkbook(file, onStatus) {
   }
   return sheets;
 }
+
+/* ================= hand-off between viewers =================
+   A link opens the other viewer in a new tab; that tab asks its opener for the workbook
+   already loaded here, so it shows the data without reading the Excel file again.
+   Works on file:// pages too: postMessage needs no shared origin or storage. */
+const HANDOFF = 'sagd-viewer-handoff';
+
+/** Make `link` open its page in a new tab that receives getPayload() → {fileName, sheets}, when not null. */
+function linkHandoff(link, getPayload) {
+  const children = new Set();
+  window.addEventListener('message', e => {
+    const m = e.data;
+    if (!m || m.type !== HANDOFF || !m.ask || !children.has(e.source)) return;
+    const payload = getPayload();
+    e.source.postMessage(payload ? { type: HANDOFF, fileName: payload.fileName, sheets: payload.sheets } : { type: HANDOFF, none: true }, '*');
+  });
+  link.addEventListener('click', e => {
+    if (!getPayload()) return; // nothing loaded: plain navigation
+    const win = window.open(link.href, '_blank');
+    if (!win) return; // popup blocked: fall back to the plain link
+    e.preventDefault();
+    children.add(win);
+  });
+}
+
+/** If this tab was opened by the other viewer, ask it for its data. Resolves {fileName, sheets} or null. */
+function receiveHandoff(timeoutMs = 3000) {
+  const parent = window.opener;
+  if (!parent || parent === window) return Promise.resolve(null);
+  return new Promise(resolve => {
+    const done = v => { clearTimeout(timer); window.removeEventListener('message', onMsg); resolve(v); };
+    const onMsg = e => {
+      const m = e.data;
+      if (e.source !== parent || !m || m.type !== HANDOFF || m.ask) return;
+      done(m.none ? null : { fileName: m.fileName, sheets: m.sheets });
+    };
+    const timer = setTimeout(() => done(null), timeoutMs);
+    window.addEventListener('message', onMsg);
+    try { parent.postMessage({ type: HANDOFF, ask: true }, '*'); } catch (err) { done(null); }
+  });
+}

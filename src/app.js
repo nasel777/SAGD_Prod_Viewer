@@ -15,6 +15,7 @@ const TYPE_LABEL = { ts: 'Time series', xp: 'Crossplot', st: 'Statistics' };
 
 const S = {
   fileName: null,
+  sheets: [],         // parsed sheets as read, handed to the Profile Viewer
   wells: [],          // well (sheet) names in workbook order
   data: {},           // name -> { t: Float64Array(ms UTC), cols: {name: Float64Array}, start: ms }
   rawCols: [],        // union of numeric columns (excluding date)
@@ -58,8 +59,24 @@ async function loadExcel(file) {
   }
 }
 
+/** Opened from the Profile Viewer link: take the workbook that viewer already has loaded. */
+async function loadFromOpener() {
+  if (!window.opener) return;
+  showLoading('Receiving data from the Profile Viewer…');
+  try {
+    const r = await receiveHandoff();
+    if (r) { ingest(r.fileName, r.sheets); toast(`Loaded ${S.wells.length} wells from the Profile Viewer`); }
+  } catch (e) {
+    console.error(e);
+    toast('Could not use the data from the Profile Viewer: ' + (e.message || e), true);
+  } finally {
+    hideLoading();
+  }
+}
+
 function ingest(fileName, sheets) {
   S.fileName = fileName;
+  S.sheets = sheets;
   S.wells = [];
   S.data = {};
   const colOrder = [];
@@ -992,6 +1009,7 @@ function init() {
   $('#fileInput2').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#cfgInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#saveCfg').addEventListener('click', saveLayoutFile);
+  linkHandoff($('#profileLink'), () => S.wells.length ? { fileName: S.fileName, sheets: S.sheets } : null);
   document.querySelectorAll('#resSeg button').forEach(b => b.addEventListener('click', () => setSetting('res', b.dataset.v)));
   document.querySelectorAll('#colSeg button').forEach(b => b.addEventListener('click', () => setSetting('cols', +b.dataset.v)));
   $('#maSel').addEventListener('change', e => setSetting('ma', +e.target.value));
@@ -1024,3 +1042,4 @@ function init() {
 }
 
 init();
+loadFromOpener();
