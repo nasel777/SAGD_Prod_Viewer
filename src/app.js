@@ -691,6 +691,22 @@ function applyFocus(f) {
   window.scrollTo({ top: Math.max(0, top) });
 }
 
+/** Well of the top plot and the middle of its visible date range, for the Profile Viewer.
+    A plot without a calendar-date axis falls back to the synced date zoom, else sends the well only. */
+function topFocus() {
+  const p = S.plots[0];
+  const well = p && (p.wells || []).find(w => S.data[w]);
+  if (!well) return null;
+  let range = null;
+  if (p.type === 'ts' && p.xmode === 'date') {
+    const el = cardEl(p.id) && cardEl(p.id).querySelector('.chart');
+    range = el && el._fullLayout && el._fullLayout.xaxis && el._fullLayout.xaxis.range;
+  }
+  if (!range && S.xrange && S.xrange.date) range = S.xrange.date;
+  const a = range && Date.parse(range[0]), b = range && Date.parse(range[1]);
+  return { well, date: Number.isFinite(a) && Number.isFinite(b) ? isoDate(Math.round((a + b) / 2 / DAY) * DAY) : null };
+}
+
 function plotById(id) { return S.plots.find(p => p.id === id); }
 function cardEl(id) { return document.querySelector(`.card[data-id="${id}"]`); }
 
@@ -1041,7 +1057,7 @@ function init() {
   $('#fileInput2').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#cfgInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#saveCfg').addEventListener('click', saveLayoutFile);
-  linkHandoff($('#profileLink'), () => S.wells.length ? { fileName: S.fileName, sheets: S.sheets } : null);
+  linkHandoff($('#profileLink'), () => S.wells.length ? { fileName: S.fileName, sheets: S.sheets, focus: topFocus() } : null);
   document.querySelectorAll('#resSeg button').forEach(b => b.addEventListener('click', () => setSetting('res', b.dataset.v)));
   document.querySelectorAll('#colSeg button').forEach(b => b.addEventListener('click', () => setSetting('cols', +b.dataset.v)));
   $('#maSel').addEventListener('change', e => setSetting('ma', +e.target.value));

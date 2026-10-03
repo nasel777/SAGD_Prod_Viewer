@@ -105,13 +105,30 @@ async function loadFromOpener() {
   showLoading('Receiving data from the Production Viewer…');
   try {
     const r = await receiveHandoff();
-    if (r) { ingest(r.fileName, r.sheets); toast(`Loaded ${P.wells.length} wells from the Production Viewer`); }
+    if (r) {
+      ingest(r.fileName, r.sheets);
+      const f = applyFocus(r.focus);
+      toast(`Loaded ${P.wells.length} wells from the Production Viewer` + (f ? ` · ${f}` : ''));
+    }
   } catch (e) {
     console.error(e);
     toast('Could not use the data from the Production Viewer: ' + (e.message || e), true);
   } finally {
     hideLoading();
   }
+}
+
+/** Show the well (and date, when given) the Production Viewer handed over. Returns a label, or '' when nothing applied. */
+function applyFocus(f) {
+  const st = P.settings;
+  if (!f || !P.data[f.well]) return '';
+  st.well = f.well;
+  const ms = parseIso(f.date);
+  if (Number.isFinite(ms)) st.cur = Math.min(P.tmax, Math.max(P.tmin, ms));
+  syncToolbar();
+  renderAll();
+  persist();
+  return Number.isFinite(ms) ? `${st.well} @ ${isoDate(st.cur)}` : st.well;
 }
 
 function ingest(fileName, sheets) {
