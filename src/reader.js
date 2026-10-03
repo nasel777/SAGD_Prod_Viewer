@@ -239,14 +239,15 @@ async function readWorkbook(file, onStatus) {
    Works on file:// pages too: postMessage needs no shared origin or storage. */
 const HANDOFF = 'sagd-viewer-handoff';
 
-/** Make `link` open its page in a new tab that receives getPayload() → {fileName, sheets}, when not null. */
+/** Make `link` open its page in a new tab that receives getPayload() → {fileName, sheets, focus?}, when not null. */
 function linkHandoff(link, getPayload) {
   const children = new Set();
   window.addEventListener('message', e => {
     const m = e.data;
     if (!m || m.type !== HANDOFF || !m.ask || !children.has(e.source)) return;
     const payload = getPayload();
-    e.source.postMessage(payload ? { type: HANDOFF, fileName: payload.fileName, sheets: payload.sheets } : { type: HANDOFF, none: true }, '*');
+    e.source.postMessage(payload ? { type: HANDOFF, fileName: payload.fileName, sheets: payload.sheets, focus: payload.focus || null }
+      : { type: HANDOFF, none: true }, '*');
   });
   link.addEventListener('click', e => {
     if (!getPayload()) return; // nothing loaded: plain navigation
@@ -257,7 +258,7 @@ function linkHandoff(link, getPayload) {
   });
 }
 
-/** If this tab was opened by the other viewer, ask it for its data. Resolves {fileName, sheets} or null. */
+/** If this tab was opened by the other viewer, ask it for its data. Resolves {fileName, sheets, focus} or null. */
 function receiveHandoff(timeoutMs = 3000) {
   const parent = window.opener;
   if (!parent || parent === window) return Promise.resolve(null);
@@ -266,7 +267,7 @@ function receiveHandoff(timeoutMs = 3000) {
     const onMsg = e => {
       const m = e.data;
       if (e.source !== parent || !m || m.type !== HANDOFF || m.ask) return;
-      done(m.none ? null : { fileName: m.fileName, sheets: m.sheets });
+      done(m.none ? null : { fileName: m.fileName, sheets: m.sheets, focus: m.focus || null });
     };
     const timer = setTimeout(() => done(null), timeoutMs);
     window.addEventListener('message', onMsg);

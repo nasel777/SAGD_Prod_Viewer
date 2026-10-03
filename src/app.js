@@ -11,6 +11,7 @@ const DASHES = ['solid', 'dash', 'dot', 'dashdot', 'longdash', 'longdashdot'];
 const SYMBOLS = ['circle', 'square', 'diamond', 'triangle-up', 'triangle-down', 'cross', 'x', 'star',
                  'hexagon', 'pentagon', 'circle-open', 'square-open', 'diamond-open', 'triangle-up-open', 'star-open', 'hexagon-open'];
 const HEIGHTS = { S: 300, M: 420, L: 560, XL: 720 };
+const FOCUS_HALF_SPAN = 182 * DAY; // zoom around the date handed over by the Profile Viewer
 const TYPE_LABEL = { ts: 'Time series', xp: 'Crossplot', st: 'Statistics' };
 
 const S = {
@@ -28,6 +29,7 @@ const S = {
   exports: {},
   syncing: false,
   pendingLayout: null,
+  focus: null,        // {well, date, range} handed over by the Profile Viewer (this session only)
 };
 
 /* ================= derived variables ================= */
@@ -65,7 +67,11 @@ async function loadFromOpener() {
   showLoading('Receiving data from the Profile Viewer…');
   try {
     const r = await receiveHandoff();
-    if (r) { ingest(r.fileName, r.sheets); toast(`Loaded ${S.wells.length} wells from the Profile Viewer`); }
+    if (r) {
+      ingest(r.fileName, r.sheets);
+      applyFocus(r.focus);
+      toast(`Loaded ${S.wells.length} wells from the Profile Viewer` + (S.focus ? ` · ${S.focus.well} @ ${S.focus.date}` : ''));
+    }
   } catch (e) {
     console.error(e);
     toast('Could not use the data from the Profile Viewer: ' + (e.message || e), true);
@@ -77,6 +83,7 @@ async function loadFromOpener() {
 function ingest(fileName, sheets) {
   S.fileName = fileName;
   S.sheets = sheets;
+  S.focus = null;
   S.wells = [];
   S.data = {};
   const colOrder = [];
@@ -343,8 +350,10 @@ function renderTS(p) {
       y: 1, yanchor: 'bottom', showarrow: false, text: shade.label, font: { size: 11, color: '#5d6672' } }]);
   }
   L.margin.t = p.axisMode === 'stacked' ? 26 : shade.label ? 30 : 18;
-  const synced = S.settings.sync && S.xrange && S.xrange[xm];
-  if (synced) { L.xaxis.range = S.xrange[xm].slice(); L.xaxis.autorange = false; }
+  if (S.focus && xm === 'date') L.shapes = L.shapes.concat([{ type: 'line', xref: 'x', yref: 'paper', x0: S.focus.date, x1: S.focus.date,
+    y0: 0, y1: 1, line: { color: '#1b1f24', width: 1.5, dash: 'dash' } }]);
+  const synced = (S.settings.sync && S.xrange && S.xrange[xm]) || (p.focus && S.focus && xm === 'date' && S.focus.range);
+  if (synced) { L.xaxis.range = synced.slice(); L.xaxis.autorange = false; }
 
   // CSV: wide table on union of x
   const keys = new Map();
@@ -657,6 +666,29 @@ function defaultPlots() {
   S.settings.res = S.settings.res || 'D';
   rebuildAll();
   persist();
+}
+
+/** Show the well and date the Profile Viewer was on: one reusable card at the top,
+    zoomed to ±6 months around the date, with a marker line on every calendar-date plot. */
+function applyFocus(f) {
+  const ms = f && Date.parse(f.date);
+  if (!f || !S.data[f.well] || !Number.isFinite(ms)) return;
+  S.focus = { well: f.well, date: isoDate(ms), range: [isoDate(ms - FOCUS_HALF_SPAN), isoDate(ms + FOCUS_HALF_SPAN)] };
+  let p = S.plots.find(q => q.focus && q.type === 'ts');
+  if (!p) {
+    const vars = ['Prod_Oil_rate_bbld', 'Prod_Water_rate_bbld', 'Inj_Steam_rate_bbld', 'Subcool_Min'].filter(hasVar).map(n => mkVar(n));
+    p = newPlot('ts', { focus: true, axisMode: 'stacked', ...(vars.length ? { vars } : {}) });
+    S.plots.unshift(p);
+  }
+  p.wells = [f.well];
+  p.xmode = 'date';
+  p.title = `${f.well} – from Profile Viewer`;
+  if (S.settings.sync) S.xrange = { ...S.xrange, date: S.focus.range.slice() };
+  rebuildAll();
+  persist();
+  // keep the card's header clear of the sticky toolbar
+  const top = cardEl(p.id).getBoundingClientRect().top + window.scrollY - $('.sticky').offsetHeight - 8;
+  window.scrollTo({ top: Math.max(0, top) });
 }
 
 function plotById(id) { return S.plots.find(p => p.id === id); }

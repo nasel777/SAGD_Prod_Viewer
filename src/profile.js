@@ -504,7 +504,8 @@ function init() {
   syncToolbar();
   $('#fileInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#fileInput2').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
-  linkHandoff($('#prodLink'), () => P.wells.length ? { fileName: P.fileName, sheets: P.sheets } : null);
+  linkHandoff($('#prodLink'), () => P.wells.length
+    ? { fileName: P.fileName, sheets: P.sheets, focus: { well: P.settings.well, date: isoDate(P.settings.cur) } } : null);
   $('#wellSel').addEventListener('change', e => setSetting('well', e.target.value));
   const seg = (id, key, conv = x => x) => document.querySelectorAll(`#${id} button`).forEach(b => b.addEventListener('click', () => setSetting(key, conv(b.dataset.v))));
   seg('varSeg', 'v'); seg('avgSeg', 'avg', Number); seg('axisSeg', 'axis'); seg('modeSeg', 'mode');
