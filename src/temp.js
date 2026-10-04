@@ -1,5 +1,5 @@
 'use strict';
-/* SAGD Profile Viewer — thermocouple temperature / subcool along the wellbore.
+/* SAGD Temp Viewer — thermocouple temperature / subcool along the wellbore.
    Reads the same workbook as the production viewer (one sheet per well) and uses
    the Temp_Point_n / Subcool_Point_n columns as positions along the lateral. */
 

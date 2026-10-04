@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SAGD Profile Viewer</title>
+<title>SAGD Temp Viewer</title>
 <style>
 :root {
   --bg: #f4f5f7;
@@ -175,7 +175,7 @@ input[type=date], input[type=text] { padding: 4px 6px; border: 1px solid var(--b
 .swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; background: transparent; }
 a.btn { text-decoration: none; color: inherit; }
 
-/* ---------- profile viewer (on top of app.css) ---------- */
+/* ---------- temp viewer (on top of app.css) ---------- */
 .hidden { display: none !important; }
 code { font-size: 12px; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
 .card-head .title.static { flex: 1; padding: 3px 6px; }
@@ -213,7 +213,7 @@ table.ctx td.unit { color: var(--faint); width: 1%; white-space: nowrap; }
 <body>
 <div class="sticky">
 <header class="topbar">
-  <div class="brand">SAGD Profile Viewer</div>
+  <div class="brand">SAGD Temp Viewer</div>
   <div class="file-info" id="fileInfo">No file loaded</div>
   <div class="spacer"></div>
   <a class="btn" id="prodLink" href="SAGD_Prod_Viewer.html" title="Open the production viewer (with the loaded data)">Production Viewer ↗</a>
@@ -630,7 +630,7 @@ function receiveHandoff(timeoutMs = 3000) {
 </script>
 <script>
 'use strict';
-/* SAGD Profile Viewer — thermocouple temperature / subcool along the wellbore.
+/* SAGD Temp Viewer — thermocouple temperature / subcool along the wellbore.
    Reads the same workbook as the production viewer (one sheet per well) and uses
    the Temp_Point_n / Subcool_Point_n columns as positions along the lateral. */
 

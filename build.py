@@ -1,4 +1,4 @@
-"""Bundle src/ into single offline HTML files: SAGD_Prod_Viewer.html and SAGD_Profile_Viewer.html"""
+"""Bundle src/ into single offline HTML files: SAGD_Prod_Viewer.html and SAGD_Temp_Viewer.html"""
 from pathlib import Path
 
 ROOT = Path(__file__).parent
@@ -29,5 +29,5 @@ common = {
     "/*@@PLOTLY@@*/": read("lib/plotly.min.js"),
 }
 bundle("app.html", {**common, "/*@@APP@@*/": read("app.js")}, "SAGD_Prod_Viewer.html")
-bundle("profile.html", {**common, "/*@@PROFILE_CSS@@*/": read("profile.css"), "/*@@PROFILE@@*/": read("profile.js")},
-       "SAGD_Profile_Viewer.html")
+bundle("temp.html", {**common, "/*@@TEMP_CSS@@*/": read("temp.css"), "/*@@TEMP@@*/": read("temp.js")},
+       "SAGD_Temp_Viewer.html")

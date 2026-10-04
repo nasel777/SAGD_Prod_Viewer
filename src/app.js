@@ -15,12 +15,12 @@ const HEIGHTS = { S: 300, M: 420, L: 560, XL: 720 };
 const EVENT_WINDOWS = { normal: { label: 'Last normal before', color: '#b8bfc8' }, before: { label: 'Just before', color: '#8fb3e3' },
                         after: { label: 'After redrill', color: '#2a78d6' } };
 const NORMAL_UPTIME_H = 20; // "normal" = trailing 90-day mean Production_Hours at least this
-const FOCUS_HALF_SPAN = 182 * DAY; // zoom around the date handed over by the Profile Viewer
+const FOCUS_HALF_SPAN = 182 * DAY; // zoom around the date handed over by the Temp Viewer
 const TYPE_LABEL = { ts: 'Time series', xp: 'Crossplot', st: 'Statistics' };
 
 const S = {
   fileName: null,
-  sheets: [],         // parsed sheets as read, handed to the Profile Viewer
+  sheets: [],         // parsed sheets as read, handed to the Temp Viewer
   wells: [],          // well (sheet) names in workbook order
   data: {},           // name -> { t: Float64Array(ms UTC), cols: {name: Float64Array}, start: ms }
   rawCols: [],        // union of numeric columns (excluding date)
@@ -34,7 +34,7 @@ const S = {
   syncing: false,
   pendingLayout: null,
   eventCol: null,     // 0/1 column marking wells after a redrill (W.event = its first day)
-  focus: null,        // {well, date, range} handed over by the Profile Viewer (this session only)
+  focus: null,        // {well, date, range} handed over by the Temp Viewer (this session only)
 };
 
 /* ================= derived variables ================= */
@@ -66,20 +66,20 @@ async function loadExcel(file) {
   }
 }
 
-/** Opened from the Profile Viewer link: take the workbook that viewer already has loaded. */
+/** Opened from the Temp Viewer link: take the workbook that viewer already has loaded. */
 async function loadFromOpener() {
   if (!window.opener) return;
-  showLoading('Receiving data from the Profile Viewer…');
+  showLoading('Receiving data from the Temp Viewer…');
   try {
     const r = await receiveHandoff();
     if (r) {
       ingest(r.fileName, r.sheets);
       applyFocus(r.focus);
-      toast(`Loaded ${S.wells.length} wells from the Profile Viewer` + (S.focus ? ` · ${S.focus.well} @ ${S.focus.date}` : ''));
+      toast(`Loaded ${S.wells.length} wells from the Temp Viewer` + (S.focus ? ` · ${S.focus.well} @ ${S.focus.date}` : ''));
     }
   } catch (e) {
     console.error(e);
-    toast('Could not use the data from the Profile Viewer: ' + (e.message || e), true);
+    toast('Could not use the data from the Temp Viewer: ' + (e.message || e), true);
   } finally {
     hideLoading();
   }
@@ -768,7 +768,7 @@ function defaultPlots() {
   persist();
 }
 
-/** Show the well and date the Profile Viewer was on: one reusable card at the top,
+/** Show the well and date the Temp Viewer was on: one reusable card at the top,
     zoomed to ±6 months around the date, with a marker line on every calendar-date plot. */
 function applyFocus(f) {
   const ms = f && Date.parse(f.date);
@@ -782,7 +782,7 @@ function applyFocus(f) {
   }
   p.wells = [f.well];
   p.xmode = 'date';
-  p.title = `${f.well} – from Profile Viewer`;
+  p.title = `${f.well} – from Temp Viewer`;
   if (S.settings.sync) S.xrange = { ...S.xrange, date: S.focus.range.slice() };
   rebuildAll();
   persist();
@@ -791,7 +791,7 @@ function applyFocus(f) {
   window.scrollTo({ top: Math.max(0, top) });
 }
 
-/** Well of the top plot and the middle of its visible date range, for the Profile Viewer.
+/** Well of the top plot and the middle of its visible date range, for the Temp Viewer.
     A plot without a calendar-date axis falls back to the synced date zoom, else sends the well only. */
 function topFocus() {
   const p = S.plots[0];
@@ -1173,7 +1173,7 @@ function init() {
   $('#fileInput2').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#cfgInput').addEventListener('change', e => { handleFiles(e.target.files); e.target.value = ''; });
   $('#saveCfg').addEventListener('click', saveLayoutFile);
-  linkHandoff($('#profileLink'), () => S.wells.length ? { fileName: S.fileName, sheets: S.sheets, focus: topFocus() } : null);
+  linkHandoff($('#tempLink'), () => S.wells.length ? { fileName: S.fileName, sheets: S.sheets, focus: topFocus() } : null);
   document.querySelectorAll('#resSeg button').forEach(b => b.addEventListener('click', () => setSetting('res', b.dataset.v)));
   document.querySelectorAll('#colSeg button').forEach(b => b.addEventListener('click', () => setSetting('cols', +b.dataset.v)));
   $('#maSel').addEventListener('change', e => setSetting('ma', +e.target.value));

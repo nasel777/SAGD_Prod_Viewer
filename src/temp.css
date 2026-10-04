@@ -1,4 +1,4 @@
-/* ---------- profile viewer (on top of app.css) ---------- */
+/* ---------- temp viewer (on top of app.css) ---------- */
 .hidden { display: none !important; }
 code { font-size: 12px; background: var(--surface-2); padding: 1px 4px; border-radius: 4px; }
 .card-head .title.static { flex: 1; padding: 3px 6px; }
