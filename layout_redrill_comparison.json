@@ -1,0 +1,207 @@
+{
+  "app": "SAGD_Prod_Viewer",
+  "version": 1,
+  "savedAt": "2026-10-04T00:00:00.000Z",
+  "sourceFile": "integrated_data_20260916.xlsx",
+  "settings": {
+    "res": "D",
+    "ma": 30,
+    "excludeShutin": false,
+    "zeroGap": false,
+    "sync": true,
+    "cols": 1
+  },
+  "plots": [
+    {
+      "id": 1,
+      "type": "st",
+      "title": "Redrill ① Oil rate: last normal / just before / after (180 d)",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_02",
+        "101_03",
+        "101_04",
+        "101_05",
+        "102_07",
+        "102_09",
+        "102_10"
+      ],
+      "var": "Prod_Oil_rate_bbld",
+      "stat": "mean",
+      "chart": "bar",
+      "logY": false,
+      "from": "",
+      "to": "",
+      "period": "event",
+      "window": 180,
+      "normal": true
+    },
+    {
+      "id": 2,
+      "type": "st",
+      "title": "Redrill ② Uptime (Production_Hours)",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_02",
+        "101_03",
+        "101_04",
+        "101_05",
+        "102_07",
+        "102_09",
+        "102_10"
+      ],
+      "var": "Production_Hours",
+      "stat": "mean",
+      "chart": "bar",
+      "logY": false,
+      "from": "",
+      "to": "",
+      "period": "event",
+      "window": 180,
+      "normal": true
+    },
+    {
+      "id": 3,
+      "type": "st",
+      "title": "Redrill ③ SOR (window total)",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_02",
+        "101_03",
+        "101_04",
+        "101_05",
+        "102_07",
+        "102_09",
+        "102_10"
+      ],
+      "var": "SOR",
+      "stat": "mean",
+      "chart": "bar",
+      "logY": false,
+      "from": "",
+      "to": "",
+      "period": "event",
+      "window": 180,
+      "normal": true
+    },
+    {
+      "id": 4,
+      "type": "st",
+      "title": "Redrill ④ Steam injection rate",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_02",
+        "101_03",
+        "101_04",
+        "101_05",
+        "102_07",
+        "102_09",
+        "102_10"
+      ],
+      "var": "Inj_Steam_rate_bbld",
+      "stat": "mean",
+      "chart": "bar",
+      "logY": false,
+      "from": "",
+      "to": "",
+      "period": "event",
+      "window": 180,
+      "normal": true
+    },
+    {
+      "id": 5,
+      "type": "st",
+      "title": "Redrill ⑤ Water cut (window total)",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_02",
+        "101_03",
+        "101_04",
+        "101_05",
+        "102_07",
+        "102_09",
+        "102_10"
+      ],
+      "var": "Water_Cut_%",
+      "stat": "mean",
+      "chart": "bar",
+      "logY": false,
+      "from": "",
+      "to": "",
+      "period": "event",
+      "window": 180,
+      "normal": true
+    },
+    {
+      "id": 6,
+      "type": "ts",
+      "title": "Redrill ⑥ Oil rate vs days since redrill",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_02",
+        "101_03",
+        "101_04",
+        "101_05",
+        "102_07",
+        "102_09",
+        "102_10"
+      ],
+      "vars": [
+        {
+          "name": "Prod_Oil_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "event",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 7,
+      "type": "ts",
+      "title": "Redrill ⑦ SOR vs days since redrill",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_02",
+        "101_03",
+        "101_04",
+        "101_05",
+        "102_07",
+        "102_09",
+        "102_10"
+      ],
+      "vars": [
+        {
+          "name": "SOR",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 10
+        }
+      ],
+      "xmode": "event",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    }
+  ]
+}

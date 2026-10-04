@@ -563,6 +563,10 @@ const DASHES = ['solid', 'dash', 'dot', 'dashdot', 'longdash', 'longdashdot'];
 const SYMBOLS = ['circle', 'square', 'diamond', 'triangle-up', 'triangle-down', 'cross', 'x', 'star',
                  'hexagon', 'pentagon', 'circle-open', 'square-open', 'diamond-open', 'triangle-up-open', 'star-open', 'hexagon-open'];
 const HEIGHTS = { S: 300, M: 420, L: 560, XL: 720 };
+// before / after windows around the redrill date in Statistics plots
+const EVENT_WINDOWS = { normal: { label: 'Last normal before', color: '#b8bfc8' }, before: { label: 'Just before', color: '#8fb3e3' },
+                        after: { label: 'After redrill', color: '#2a78d6' } };
+const NORMAL_UPTIME_H = 20; // "normal" = trailing 90-day mean Production_Hours at least this
 const FOCUS_HALF_SPAN = 182 * DAY; // zoom around the date handed over by the Profile Viewer
 const TYPE_LABEL = { ts: 'Time series', xp: 'Crossplot', st: 'Statistics' };
 
@@ -581,6 +585,7 @@ const S = {
   exports: {},
   syncing: false,
   pendingLayout: null,
+  eventCol: null,     // 0/1 column marking wells after a redrill (W.event = its first day)
   focus: null,        // {well, date, range} handed over by the Profile Viewer (this session only)
 };
 
@@ -694,6 +699,13 @@ function ingest(fileName, sheets) {
     const oil = W.cols['Prod_Oil_rate_bbld'];
     W.start = W.t[0];
     if (oil) for (let i = 0; i < W.n; i++) if (oil[i] > 0) { W.start = W.t[i]; break; }
+  }
+  // redrill date: first day the redrill flag is 1
+  S.eventCol = S.rawCols.find(c => S.flagCols.has(c) && /redrill/i.test(c)) || null;
+  for (const w of S.wells) {
+    const W = S.data[w], col = S.eventCol && W.cols[S.eventCol];
+    W.event = null;
+    if (col) for (let i = 0; i < W.n; i++) if (col[i] === 1) { W.event = W.t[i]; break; }
   }
   S.allVars = [...S.rawCols, ...Object.keys(S.derived)];
 
@@ -870,6 +882,10 @@ function renderTS(p) {
         const st = S.data[w].start, xs = [], ys = [];
         for (let i = 0; i < s.t.length; i++) { const dd = Math.round((s.t[i] - st) / DAY); if (dd >= 0) { xs.push(dd); ys.push(s.y[i]); } }
         x = xs; y = ys;
+      } else if (xm === 'event') {
+        const ev = S.data[w].event;
+        if (ev === null) return; // well without a redrill
+        x = s.t.map(t => Math.round((t - ev) / DAY));
       } else x = s.t.map(isoDate);
       npts += x.length;
       const fullName = multiW && multiV ? `${w} · ${v.name}` : multiW ? w : v.name;
@@ -890,12 +906,15 @@ function renderTS(p) {
   if (traces.length > 10) traces.forEach(t => { t.hovertemplate = `${escapeHtml(t.name)}: %{y:,.4~g}<extra></extra>`; });
 
   const L = baseLayout(p);
-  L.xaxis = { ...AXIS, type: xm === 'aligned' ? 'linear' : 'date', title: xm === 'aligned' ? { text: 'Days since first oil' } : undefined };
+  const xTitle = { aligned: 'Days since first oil', event: 'Days since redrill' }[xm];
+  L.xaxis = { ...AXIS, type: xTitle ? 'linear' : 'date', title: xTitle ? { text: xTitle } : undefined };
   layoutYAxes(p, vars, L, multiW, traces);
   L.hovermode = traces.length <= 10 ? 'x unified' : 'closest';
   L.uirevision = `${p.id}|${xm}|${p.axisMode}|` + JSON.stringify(vars.map(v => [v.name, v.side, v.log, v.min, v.max]));
   const shade = flagShapes(p, xm);
   L.shapes = shade.shapes;
+  if (xm === 'event') L.shapes = L.shapes.concat([{ type: 'line', xref: 'x', yref: 'paper', x0: 0, x1: 0, y0: 0, y1: 1,
+    line: { color: '#1b1f24', width: 1.5, dash: 'dash' } }]);
   if (shade.label) {
     const right = p.axisMode === 'stacked' && vars[0] && vars[0].side === 'R' ? false : p.axisMode === 'stacked';
     L.annotations = (L.annotations || []).concat([{ xref: 'paper', yref: 'paper', x: right ? 1 : 0, xanchor: right ? 'right' : 'left',
@@ -914,9 +933,11 @@ function renderTS(p) {
     const v = tr.y[i]; keys.get(xv)[ti] = Number.isFinite(v) ? v : '';
   }));
   const sorted = [...keys.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  S.exports[p.id] = { header: [xm === 'aligned' ? 'Day' : 'Date', ...exp.map(e => e.name)], rows: sorted.map(k => [k, ...keys.get(k)]) };
+  S.exports[p.id] = { header: [xm === 'date' ? 'Date' : 'Day', ...exp.map(e => e.name)], rows: sorted.map(k => [k, ...keys.get(k)]) };
 
-  return { traces, layout: L, empty: !traces.length ? 'Select at least one well and one variable.' : '' };
+  const empty = traces.length ? '' : xm === 'event' && wells.length ? 'None of the selected wells has a redrill date.'
+    : 'Select at least one well and one variable.';
+  return { traces, layout: L, empty };
 }
 
 axisRange.n = 0;
@@ -1005,7 +1026,8 @@ function flagShapes(p, xm) {
   const col = W && W.cols[f.var];
   if (!col) return { shapes: [] };
   const val = +f.value;
-  const tx = t => xm === 'aligned' ? (t - W.start) / DAY : isoDate(t);
+  if (xm === 'event' && W.event === null) return { shapes: [] };
+  const tx = t => xm === 'aligned' ? (t - W.start) / DAY : xm === 'event' ? (t - W.event) / DAY : isoDate(t);
   const shapes = [];
   let start = null;
   for (let i = 0; i <= W.n; i++) {
@@ -1078,7 +1100,78 @@ const STAT_FN = {
 };
 const STAT_LABEL = { mean: 'Mean', median: 'Median', sum: 'Sum (daily values)', max: 'Max', min: 'Min', last: 'Last value', p90: 'P90' };
 
+/** Day windows around a well's redrill date: {normal?, before, after} → [first day, last day] in ms, clipped to the data. */
+function eventWindows(w, days) {
+  const W = S.data[w], ev = W.event;
+  if (ev === null) return null;
+  const last = W.t[W.n - 1], span = (days - 1) * DAY;
+  const out = { before: [ev - days * DAY, ev - DAY], after: [ev, Math.min(last, ev + span)] };
+  const hrs = W.cols['Production_Hours'];
+  if (hrs) {
+    // last day before the redrill whose trailing 90-day mean uptime was normal
+    let sum = 0, n = 0, end = null;
+    for (let i = 0; i < W.n && W.t[i] < ev; i++) {
+      if (Number.isFinite(hrs[i])) { sum += hrs[i]; n++; }
+      if (i >= 90 && Number.isFinite(hrs[i - 90])) { sum -= hrs[i - 90]; n--; }
+      if (i >= 59 && n && sum / n >= NORMAL_UPTIME_H) end = W.t[i];
+    }
+    if (end !== null) out.normal = [end - span, end];
+  }
+  return out;
+}
+
+/** One value per window: mean of daily values, or for a ratio (SOR, water cut) the ratio of the summed components. */
+function windowValue(w, name, stat, [a, b]) {
+  const d = S.derived[name], W = S.data[w];
+  const pick = nm => {
+    const s = getSeries(w, nm, { res: 'D', noMA: true });
+    const out = [];
+    if (s) for (let i = 0; i < s.t.length; i++) if (s.t[i] >= a && s.t[i] <= b && Number.isFinite(s.y[i])) out.push(s.y[i]);
+    return out;
+  };
+  if (d && d.kind === 'ratio') {
+    const tot = names => names.reduce((acc, nm) => acc + pick(nm).reduce((x, y) => x + y, 0), 0);
+    const num = tot(d.num), den = tot(d.den);
+    const days = Math.round((Math.min(b, W.t[W.n - 1]) - Math.max(a, W.t[0])) / DAY) + 1;
+    return { v: den > 0 ? num / den * d.scale : NaN, n: Math.max(0, days) };
+  }
+  const vals = pick(name);
+  return { v: vals.length ? STAT_FN[stat](vals) : NaN, n: vals.length };
+}
+
+function renderEventST(p) {
+  const wells = p.wells.filter(w => S.data[w] && S.data[w].event !== null);
+  const keys = ['normal', 'before', 'after'].filter(k => k !== 'normal' || p.normal);
+  const rows = [], traces = [];
+  const isRatio = S.derived[p.var] && S.derived[p.var].kind === 'ratio';
+  keys.forEach(k => {
+    const X = [], Y = [], H = [];
+    wells.forEach(w => {
+      const win = eventWindows(w, p.window)[k];
+      if (!win) return;
+      const r = windowValue(w, p.var, p.stat, win);
+      X.push(w); Y.push(Number.isFinite(r.v) ? r.v : null);
+      H.push(`${isoDate(win[0])} → ${isoDate(win[1])} · ${r.n} d`);
+      rows.push([w, EVENT_WINDOWS[k].label, isoDate(win[0]), isoDate(win[1]), r.n, Number.isFinite(r.v) ? r.v : '']);
+    });
+    traces.push({ type: 'bar', name: EVENT_WINDOWS[k].label, x: X, y: Y, customdata: H,
+      marker: { color: EVENT_WINDOWS[k].color, line: { width: 0 } }, texttemplate: '%{y:,.3~s}', textposition: 'outside', cliponaxis: false,
+      hovertemplate: `<b>%{x}</b> · ${EVENT_WINDOWS[k].label}<br>%{y:,.4~g}<br>%{customdata}<extra></extra>` });
+  });
+  const L = baseLayout(p);
+  const unit = varUnit(p.var);
+  const what = isRatio ? `${p.var} (window total)` : `${STAT_LABEL[p.stat]} of ${p.var}`;
+  L.yaxis = { ...AXIS, title: { text: `${what}${unit ? ' [' + unit + ']' : ''}` }, type: p.logY ? 'log' : 'linear' };
+  L.xaxis = { ...AXIS, type: 'category' };
+  L.barmode = 'group'; L.bargap = 0.25; L.hovermode = 'closest';
+  L.uirevision = `${p.id}|event|${p.var}|${p.stat}|${p.window}`;
+  S.exports[p.id] = { header: ['Well', 'Window', 'From', 'To', 'Days', what], rows };
+  const has = traces.some(t => t.y.length);
+  return { traces, layout: L, empty: has ? '' : 'None of the selected wells has a redrill date.' };
+}
+
 function renderST(p) {
+  if (p.period === 'event' && S.eventCol) return renderEventST(p);
   const wells = p.wells.filter(w => S.data[w]);
   const traces = [];
   const L = baseLayout(p);
@@ -1180,6 +1273,7 @@ function newPlot(type, extra = {}) {
   });
   if (type === 'st') Object.assign(base, {
     wells: S.wells.slice(), var: firstVar('Prod_Oil_rate_bbld'), stat: 'mean', chart: 'bar', logY: false, from: '', to: '',
+    period: 'range', window: 180, normal: true,
   });
   return Object.assign(base, extra);
 }
@@ -1202,7 +1296,13 @@ function sanitize(p) {
     if (p.flag.well && !S.data[p.flag.well]) p.flag.well = '';
   }
   if (p.type === 'xp') { if (!hasVar(p.x)) p.x = firstVar('Inj_Steam_rate_bbld'); if (!hasVar(p.y)) p.y = firstVar('Prod_Oil_rate_bbld'); }
-  if (p.type === 'st') { if (!hasVar(p.var)) p.var = firstVar('Prod_Oil_rate_bbld'); }
+  if (p.type === 'st') {
+    if (!hasVar(p.var)) p.var = firstVar('Prod_Oil_rate_bbld');
+    p.period = p.period === 'event' ? 'event' : 'range';
+    p.window = [90, 180, 365].includes(+p.window) ? +p.window : 180;
+    p.normal = p.normal !== false;
+  }
+  if (p.type === 'ts' && p.xmode === 'event' && !S.eventCol) p.xmode = 'date';
 }
 
 function defaultPlots() {
@@ -1420,7 +1520,10 @@ function buildCfg(p) {
       h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'Y axes'),
         seg([['overlay', 'Overlay'], ['stacked', 'Stacked tracks']], p.axisMode, m => { p.axisMode = m; update(true); }, true)),
       h('div', { class: 'note' }, 'Leave min / max empty for auto. Overlay places axes side by side; Stacked gives each variable its own track.')));
-    parts.push(section('X axis', null, seg([['date', 'Calendar date'], ['aligned', 'Days since first oil']], p.xmode, v => { p.xmode = v; update(true); }, true)));
+    const xOpts = [['date', 'Calendar date'], ['aligned', 'Days since first oil']];
+    if (S.eventCol) xOpts.push(['event', 'Days since redrill']);
+    parts.push(section('X axis', null, seg(xOpts, p.xmode, v => { p.xmode = v; update(true); }, true),
+      p.xmode === 'event' ? h('div', { class: 'note' }, `Day 0 = first day ${S.eventCol} = 1. Wells without a redrill are left out.`) : null));
     parts.push(section('Display', null,
       h('div', { class: 'row' }, seg([['lines', 'Lines'], ['markers', 'Markers'], ['lines+markers', 'Both']], p.style, v => { p.style = v; update(true); }, true)),
       heightRow(p, update)));
@@ -1455,11 +1558,24 @@ function buildCfg(p) {
     statSel.value = p.stat;
     parts.push(section('Variable', null,
       h('div', { class: 'row' }, varSelect(p.var, v => { p.var = v; update(true); })),
-      h('div', { class: 'row' }, seg([['bar', 'Bar (statistic)'], ['box', 'Box (distribution)']], p.chart, v => { p.chart = v; update(true); }, true)),
+      p.period === 'event' ? null : h('div', { class: 'row' }, seg([['bar', 'Bar (statistic)'], ['box', 'Box (distribution)']], p.chart, v => { p.chart = v; update(true); }, true)),
       p.chart === 'bar' ? h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'Statistic'), statSel) : null,
       h('div', { class: 'row' }, h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: p.logY, onchange: e => { p.logY = e.target.checked; update(false); } }), 'Log Y')),
       h('div', { class: 'note' }, 'Computed from daily values within the period. Shut-in / zero filters apply; moving average and resolution do not.')));
-    parts.push(dateRangeRows(p, update));
+    if (S.eventCol) {
+      const ev = p.period === 'event';
+      parts.push(section('Compare', null,
+        h('div', { class: 'row' }, seg([['range', 'Date range'], ['event', 'Before / after redrill']], p.period,
+          v => { p.period = v; if (v === 'event') p.chart = 'bar'; update(true); }, true)),
+        ev ? h('div', { class: 'row' }, h('span', { class: 'tlabel' }, 'Window'),
+          seg([[90, '90 d'], [180, '180 d'], [365, '365 d']], p.window, v => { p.window = v; update(true); }, true)) : null,
+        ev ? h('div', { class: 'row' }, h('label', { class: 'chk' }, h('input', { type: 'checkbox', checked: p.normal,
+          onchange: e => { p.normal = e.target.checked; update(false); } }), 'Last normal period')) : null,
+        ev ? h('div', { class: 'note' }, `Just before = the window ending the day before the redrill; after = from the redrill day. ` +
+          `Last normal = the window ending on the last day before the redrill whose 90-day mean Production_Hours was ≥ ${NORMAL_UPTIME_H} h. ` +
+          'Ratios (SOR, water cut) are window totals.') : null));
+    }
+    if (p.period !== 'event' || !S.eventCol) parts.push(dateRangeRows(p, update));
     parts.push(section('Size', null, heightRow(p, update)));
   }
   return parts;
