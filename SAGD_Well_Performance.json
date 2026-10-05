@@ -1,0 +1,160 @@
+{
+  "app": "SAGD_Prod_Viewer",
+  "version": 1,
+  "savedAt": "2026-10-04T14:05:52.653Z",
+  "sourceFile": "integrated_data_20260916.xlsx",
+  "settings": {
+    "res": "D",
+    "ma": 7,
+    "excludeShutin": true,
+    "zeroGap": false,
+    "sync": true,
+    "cols": 1
+  },
+  "plots": [
+    {
+      "id": 7,
+      "type": "ts",
+      "title": "Time series 7",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_03",
+        "102_05"
+      ],
+      "vars": [
+        {
+          "name": "Prod_Oil_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "ESP_Operation",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 8,
+      "type": "ts",
+      "title": "Time series 8",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_03",
+        "102_05"
+      ],
+      "vars": [
+        {
+          "name": "Frequency_Hz",
+          "side": "L",
+          "log": false,
+          "min": "30",
+          "max": ""
+        },
+        {
+          "name": "Choke_Size_%",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Intake_Pressure_kPa",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "ESP_Operation",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 9,
+      "type": "ts",
+      "title": "Time series 9",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_03",
+        "102_05"
+      ],
+      "vars": [
+        {
+          "name": "Water_Cut_%",
+          "side": "L",
+          "log": false,
+          "min": "40",
+          "max": "90"
+        },
+        {
+          "name": "SOR",
+          "side": "R",
+          "log": false,
+          "min": "",
+          "max": "10"
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "ESP_Operation",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 10,
+      "type": "ts",
+      "title": "Time series 10",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_03",
+        "102_05"
+      ],
+      "vars": [
+        {
+          "name": "Subcool_Min",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": "60"
+        },
+        {
+          "name": "Injection_Pressure_kPa",
+          "side": "R",
+          "log": false,
+          "min": "3000",
+          "max": "3500"
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "ESP_Operation",
+        "well": "",
+        "value": 0
+      }
+    }
+  ]
+}
