@@ -47,7 +47,14 @@ const DERIVED_DEFS = {
   'Cum_Water_bbl': { kind: 'cum', src: 'Prod_Water_rate_bbld' },
   'Cum_Steam_bbl': { kind: 'cum', src: 'Inj_Steam_rate_bbld' },
   'CSOR':          { kind: 'cum', ratioOf: ['Cum_Steam_bbl', 'Cum_Oil_bbl'] },
+  // ESP health on producing days with the pump running and the flow meter reading (minimums below): flow scaled to 60 Hz
+  // (affinity law Q ~ N) and motor current per unit flow
+  'ESP_Q60_m3h':     { kind: 'ratio', num: ['Emulsion_Rate_Am3/h'], den: ['Frequency_Hz'], scale: 60, minDen: 20,
+                       producing: { 'Emulsion_Rate_Am3/h': 0.5, 'Frequency_Hz': 10 }, group: 'ESP / Pump', unit: 'm³/h @ 60 Hz' },
+  'ESP_Amp_per_m3h': { kind: 'ratio', num: ['Current_Amp'], den: ['Emulsion_Rate_Am3/h'], scale: 1, minDen: 1,
+                       producing: { 'Emulsion_Rate_Am3/h': 0.5, 'Frequency_Hz': 10 }, group: 'ESP / Pump', unit: 'A per m³/h' },
 };
+const PRODUCING_H = 20; // a "producing day" for the ESP ratios: Production_Hours at least this, listed columns at their minimums
 
 /* ================= loading ================= */
 async function loadExcel(file) {
@@ -192,7 +199,8 @@ function binKey(ms, res) {
 }
 
 // daily values with shut-in / zero masks applied
-function maskedDaily(well, name, allowZeroGap) {
+/** producingOnly: false, or {column: minimum} a day must meet (besides Production_Hours ≥ PRODUCING_H) to count. */
+function maskedDaily(well, name, allowZeroGap, producingOnly) {
   const W = S.data[well];
   const src = W && W.cols[name];
   if (!src) return null;
@@ -200,10 +208,12 @@ function maskedDaily(well, name, allowZeroGap) {
   if (kind === 'flag' || kind === 'cum') return src;
   const out = Float64Array.from(src);
   const hrs = W.cols['Production_Hours'];
-  const ex = S.settings.excludeShutin && hrs, zg = allowZeroGap && S.settings.zeroGap;
-  if (ex || zg) {
+  const ex = S.settings.excludeShutin && hrs, zg = allowZeroGap && S.settings.zeroGap, po = producingOnly && hrs;
+  const req = po ? Object.entries(producingOnly).filter(([c]) => W.cols[c]).map(([c, min]) => [W.cols[c], min]) : [];
+  if (ex || zg || po) {
     for (let i = 0; i < out.length; i++) {
-      if (ex && hrs[i] === 0) out[i] = NaN;
+      if (po && (!(hrs[i] >= PRODUCING_H) || req.some(([a, min]) => !(a[i] >= min)))) out[i] = NaN;
+      else if (ex && hrs[i] === 0) out[i] = NaN;
       else if (zg && out[i] === 0) out[i] = NaN;
     }
   }
@@ -238,10 +248,10 @@ function movingAvg(y, N) {
   return out;
 }
 
-function summedComponents(well, names, res, ma) {
+function summedComponents(well, names, res, ma, producingOnly) {
   let acc = null;
   for (const nm of names) {
-    const d = maskedDaily(well, nm, false);
+    const d = maskedDaily(well, nm, false, producingOnly);
     if (!d) return null;
     const a = aggregate(S.data[well].t, d, res, 'mean');
     a.y = movingAvg(a.y, ma);
@@ -259,7 +269,7 @@ function getSeries(well, name, opts = {}) {
   const ma = opts.noMA ? 0 : S.settings.ma;
   const d = S.derived[name];
   if (d && d.kind === 'ratio') {
-    const num = summedComponents(well, d.num, res, ma), den = summedComponents(well, d.den, res, ma);
+    const num = summedComponents(well, d.num, res, ma, d.producing), den = summedComponents(well, d.den, res, ma, d.producing);
     if (!num || !den) return null;
     let y = num.y.map((v, i) => (den.y[i] > (d.minDen || 0) && Number.isFinite(v)) ? v / den.y[i] * d.scale : NaN);
     if (S.settings.zeroGap) y = y.map(v => v === 0 ? NaN : v);
@@ -278,6 +288,7 @@ function wellIndex(w) { return Math.max(0, S.wells.indexOf(w)); }
 function wellColor(w) { return PALETTE[wellIndex(w) % PALETTE.length]; }
 function wellDash(w) { return DASHES[Math.floor(wellIndex(w) / PALETTE.length) % DASHES.length]; }
 function varUnit(name) {
+  if (S.derived[name] && S.derived[name].unit) return S.derived[name].unit;
   const m = name.match(/_(t\/hr|Kg\/hr|kPa|Hz|Am3\/h|%|N\/m|Amp|bbld|bbl)$/i);
   if (/Temp|Subcool/i.test(name)) return '°C';
   if (name === 'SOR' || name === 'CSOR') return 'bbl/bbl';
@@ -578,7 +589,12 @@ function windowValue(w, name, stat, [a, b]) {
     return out;
   };
   if (d && d.kind === 'ratio') {
-    const tot = names => names.reduce((acc, nm) => acc + pick(nm).reduce((x, y) => x + y, 0), 0);
+    const daily = nm => {
+      const col = maskedDaily(w, nm, false, d.producing), out = [];
+      if (col) for (let i = 0; i < W.n; i++) if (W.t[i] >= a && W.t[i] <= b && Number.isFinite(col[i])) out.push(col[i]);
+      return out;
+    };
+    const tot = names => names.reduce((acc, nm) => acc + daily(nm).reduce((x, y) => x + y, 0), 0);
     const num = tot(d.num), den = tot(d.den);
     const days = Math.round((Math.min(b, W.t[W.n - 1]) - Math.max(a, W.t[0])) / DAY) + 1;
     return { v: den > 0 ? num / den * d.scale : NaN, n: Math.max(0, days) };
@@ -603,7 +619,7 @@ function renderEventST(p) {
       rows.push([w, EVENT_WINDOWS[k].label, isoDate(win[0]), isoDate(win[1]), r.n, Number.isFinite(r.v) ? r.v : '']);
     });
     traces.push({ type: 'bar', name: EVENT_WINDOWS[k].label, x: X, y: Y, customdata: H,
-      marker: { color: EVENT_WINDOWS[k].color, line: { width: 0 } }, texttemplate: '%{y:,.3~s}', textposition: 'outside', cliponaxis: false,
+      marker: { color: EVENT_WINDOWS[k].color, line: { width: 0 } }, texttemplate: '%{y:,.4~r}', textposition: 'outside', cliponaxis: false,
       hovertemplate: `<b>%{x}</b> · ${EVENT_WINDOWS[k].label}<br>%{y:,.4~g}<br>%{customdata}<extra></extra>` });
   });
   const L = baseLayout(p);
@@ -653,7 +669,7 @@ function renderST(p) {
       X.push(w); Y.push(STAT_FN[p.stat](a)); C.push(wellColor(w)); N.push(a.length);
     });
     traces.push({ type: 'bar', x: X, y: Y, customdata: N, marker: { color: C, line: { width: 0 } },
-      texttemplate: '%{y:,.3~s}', textposition: 'outside', cliponaxis: false,
+      texttemplate: '%{y:,.4~r}', textposition: 'outside', cliponaxis: false,
       hovertemplate: `<b>%{x}</b><br>${STAT_LABEL[p.stat]}: %{y:,.4~g}<br>n = %{customdata} days<extra></extra>` });
     L.yaxis = { ...AXIS, title: { text: `${STAT_LABEL[p.stat]} of ${p.var}${unit ? ' [' + unit + ']' : ''}` }, type: p.logY ? 'log' : 'linear' };
     L.xaxis = { ...AXIS, type: 'category' };

@@ -1,0 +1,354 @@
+{
+  "app": "SAGD_Prod_Viewer",
+  "version": 1,
+  "savedAt": "2026-10-05T00:00:00.000Z",
+  "sourceFile": "integrated_data_20260916.xlsx",
+  "settings": {
+    "res": "M",
+    "ma": 0,
+    "excludeShutin": false,
+    "zeroGap": false,
+    "sync": true,
+    "cols": 1
+  },
+  "plots": [
+    {
+      "id": 1,
+      "type": "ts",
+      "title": "Screening ① ESP flow at 60 Hz (producing days)",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_01",
+        "102_02",
+        "102_03",
+        "102_04",
+        "102_05",
+        "102_06",
+        "102_08",
+        "102_11",
+        "102_12"
+      ],
+      "vars": [
+        {
+          "name": "ESP_Q60_m3h",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 2,
+      "type": "ts",
+      "title": "Screening ② ESP current per unit flow (producing days)",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_01",
+        "102_02",
+        "102_03",
+        "102_04",
+        "102_05",
+        "102_06",
+        "102_08",
+        "102_11",
+        "102_12"
+      ],
+      "vars": [
+        {
+          "name": "ESP_Amp_per_m3h",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 12
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 3,
+      "type": "ts",
+      "title": "Screening ③ Oil rate",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_01",
+        "102_02",
+        "102_03",
+        "102_04",
+        "102_05",
+        "102_06",
+        "102_08",
+        "102_11",
+        "102_12"
+      ],
+      "vars": [
+        {
+          "name": "Prod_Oil_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 4,
+      "type": "ts",
+      "title": "Screening ④ SOR",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_01",
+        "102_02",
+        "102_03",
+        "102_04",
+        "102_05",
+        "102_06",
+        "102_08",
+        "102_11",
+        "102_12"
+      ],
+      "vars": [
+        {
+          "name": "SOR",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 12
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 5,
+      "type": "st",
+      "title": "Screening ⑤ Uptime since boiler restart (2025-10-06 ~)",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_01",
+        "102_02",
+        "102_03",
+        "102_04",
+        "102_05",
+        "102_06",
+        "102_08",
+        "102_11",
+        "102_12"
+      ],
+      "var": "Production_Hours",
+      "stat": "mean",
+      "chart": "bar",
+      "logY": false,
+      "from": "2025-10-06",
+      "to": "2026-09-16",
+      "period": "range",
+      "window": 180,
+      "normal": true
+    },
+    {
+      "id": 6,
+      "type": "st",
+      "title": "Screening ⑥ Oil rate, last 6 months",
+      "height": "M",
+      "collapsed": false,
+      "wells": [
+        "101_01",
+        "102_01",
+        "102_02",
+        "102_03",
+        "102_04",
+        "102_05",
+        "102_06",
+        "102_08",
+        "102_11",
+        "102_12"
+      ],
+      "var": "Prod_Oil_rate_bbld",
+      "stat": "mean",
+      "chart": "bar",
+      "logY": false,
+      "from": "2026-03-20",
+      "to": "2026-09-16",
+      "period": "range",
+      "window": 180,
+      "normal": true
+    },
+    {
+      "id": 7,
+      "type": "ts",
+      "title": "Screening ⑦ 102_03 detail",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "102_03"
+      ],
+      "vars": [
+        {
+          "name": "Prod_Oil_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "SOR",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 10
+        },
+        {
+          "name": "ESP_Q60_m3h",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "ESP_Amp_per_m3h",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 8
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 8,
+      "type": "ts",
+      "title": "Screening ⑧ 102_08 / 102_01 shut-in",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "102_01",
+        "102_08"
+      ],
+      "vars": [
+        {
+          "name": "Production_Hours",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Frequency_Hz",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Inj_Steam_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "WHT_Temp",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 9,
+      "type": "ts",
+      "title": "Screening ⑨ 102_11 intake vs injection pressure",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "102_11"
+      ],
+      "vars": [
+        {
+          "name": "Intake_Pressure_kPa",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 6500
+        },
+        {
+          "name": "Injection_Pressure_kPa",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 6500
+        },
+        {
+          "name": "Casing_Pressure_kPa",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 6500
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    }
+  ]
+}
