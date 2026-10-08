@@ -1,3 +1,10 @@
 .DS_Store
 ~$*
 __pycache__/
+
+# production data stays local
+*.xlsx
+*.xlsm
+*.xls
+*.csv
+*.zip
