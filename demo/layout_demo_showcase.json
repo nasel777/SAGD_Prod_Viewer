@@ -1,0 +1,280 @@
+{
+  "app": "SAGD_Prod_Viewer",
+  "version": 1,
+  "savedAt": "2026-10-09T00:00:00.000Z",
+  "sourceFile": "SAGD_Demo_Data.xlsx",
+  "settings": {
+    "res": "D",
+    "ma": 7,
+    "excludeShutin": true,
+    "zeroGap": false,
+    "sync": false,
+    "cols": 1
+  },
+  "plots": [
+    {
+      "id": 1,
+      "type": "ts",
+      "title": "A_01 · Production performance (oil, water cut, SOR)",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "A_01"
+      ],
+      "vars": [
+        {
+          "name": "Prod_Oil_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Water_Cut_%",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "SOR",
+          "side": "L",
+          "log": false,
+          "min": 0,
+          "max": 8
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "Oil_Operation",
+        "well": "A_01",
+        "value": 0
+      }
+    },
+    {
+      "id": 2,
+      "type": "ts",
+      "title": "A_06 · ESP load vs throughput",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "A_06"
+      ],
+      "vars": [
+        {
+          "name": "Frequency_Hz",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Current_Amp",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Emulsion_Rate_Am3/h",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "ESP_Q60_m3h",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 3,
+      "type": "xp",
+      "title": "A_06 · ESP curve: emulsion rate vs frequency, colored by date",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "A_06"
+      ],
+      "x": "Frequency_Hz",
+      "y": "Emulsion_Rate_Am3/h",
+      "colorBy": "time",
+      "logX": false,
+      "logY": false,
+      "from": "2021-01-01",
+      "to": ""
+    },
+    {
+      "id": 4,
+      "type": "ts",
+      "title": "A_02 · Steam breakthrough watch (subcool, WHT, max temp)",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "A_02"
+      ],
+      "vars": [
+        {
+          "name": "Subcool_Min",
+          "side": "L",
+          "log": false,
+          "min": -5,
+          "max": 60
+        },
+        {
+          "name": "WHT_Temp",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        },
+        {
+          "name": "Temp_Max",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "stacked",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 5,
+      "type": "ts",
+      "title": "Screening · ESP flow at 60 Hz across producers",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "A_01",
+        "A_03",
+        "A_05",
+        "A_06",
+        "B_01",
+        "B_02",
+        "B_04",
+        "B_05",
+        "B_06"
+      ],
+      "vars": [
+        {
+          "name": "ESP_Q60_m3h",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "date",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 6,
+      "type": "st",
+      "title": "Redrill · Oil rate: last normal / just before / after (180 d)",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "A_02",
+        "A_04",
+        "B_03"
+      ],
+      "var": "Prod_Oil_rate_bbld",
+      "stat": "mean",
+      "chart": "bar",
+      "logY": false,
+      "from": "",
+      "to": "",
+      "period": "event",
+      "window": 180,
+      "normal": true
+    },
+    {
+      "id": 7,
+      "type": "ts",
+      "title": "Redrill · Oil rate vs days since redrill",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "A_02",
+        "A_04",
+        "B_03"
+      ],
+      "vars": [
+        {
+          "name": "Prod_Oil_rate_bbld",
+          "side": "L",
+          "log": false,
+          "min": "",
+          "max": ""
+        }
+      ],
+      "xmode": "event",
+      "axisMode": "overlay",
+      "style": "lines",
+      "flag": {
+        "var": "",
+        "well": "",
+        "value": 0
+      }
+    },
+    {
+      "id": 8,
+      "type": "st",
+      "title": "Field · Average oil rate, Jan–Jun 2026",
+      "height": "L",
+      "collapsed": false,
+      "wells": [
+        "A_01",
+        "A_02",
+        "A_03",
+        "A_04",
+        "A_05",
+        "A_06",
+        "B_01",
+        "B_02",
+        "B_03",
+        "B_04",
+        "B_05",
+        "B_06",
+        "B_07",
+        "B_08"
+      ],
+      "var": "Prod_Oil_rate_bbld",
+      "stat": "mean",
+      "chart": "bar",
+      "logY": false,
+      "from": "2026-01-01",
+      "to": "2026-06-30",
+      "period": "range",
+      "window": 180,
+      "normal": true
+    }
+  ]
+}
