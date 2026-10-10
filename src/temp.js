@@ -118,6 +118,17 @@ async function loadFromOpener() {
   }
 }
 
+/** Hosted demo: `?data=…` opens with that workbook loaded. */
+async function loadFromQuery() {
+  try {
+    const data = await fetchQueryFile('data');
+    if (data) await loadExcel(data);
+  } catch (e) {
+    console.error(e);
+    toast('Could not load the demo data: ' + (e.message || e), true);
+  }
+}
+
 /** Show the well (and date, when given) the Production Viewer handed over. Returns a label, or '' when nothing applied. */
 function applyFocus(f) {
   const st = P.settings;
@@ -568,4 +579,4 @@ function init() {
 }
 
 init();
-loadFromOpener();
+loadFromOpener().then(() => { if (!P.wells.length) loadFromQuery(); });

@@ -506,6 +506,17 @@ async function readWorkbook(file, onStatus) {
   return sheets;
 }
 
+/* ================= ?data= / ?layout= query (hosted demo) =================
+   A hosted copy can link to `viewer.html?data=demo.xlsx` so the page opens with data loaded.
+   Only relative same-origin paths are fetched; file:// pages simply have no query. */
+async function fetchQueryFile(key) {
+  const v = new URLSearchParams(location.search).get(key);
+  if (!v || /^[a-z][a-z0-9+.-]*:|^\/\//i.test(v)) return null;
+  const res = await fetch(v);
+  if (!res.ok) throw new Error(`${v}: HTTP ${res.status}`);
+  return new File([await res.blob()], decodeURIComponent(v.split('/').pop()));
+}
+
 /* ================= hand-off between viewers =================
    A link opens the other viewer in a new tab; that tab asks its opener for the workbook
    already loaded here, so it shows the data without reading the Excel file again.
@@ -641,6 +652,19 @@ async function loadFromOpener() {
     toast('Could not use the data from the Temp Viewer: ' + (e.message || e), true);
   } finally {
     hideLoading();
+  }
+}
+
+/** Hosted demo: `?layout=…` is applied when `?data=…` finishes loading. */
+async function loadFromQuery() {
+  try {
+    const layout = await fetchQueryFile('layout');
+    if (layout) S.pendingLayout = JSON.parse(await layout.text());
+    const data = await fetchQueryFile('data');
+    if (data) await loadExcel(data);
+  } catch (e) {
+    console.error(e);
+    toast('Could not load the demo data: ' + (e.message || e), true);
   }
 }
 
@@ -1774,7 +1798,7 @@ function init() {
 }
 
 init();
-loadFromOpener();
+loadFromOpener().then(() => { if (!S.wells.length) loadFromQuery(); });
 
 </script>
 </body>

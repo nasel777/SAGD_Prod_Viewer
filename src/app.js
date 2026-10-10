@@ -92,6 +92,19 @@ async function loadFromOpener() {
   }
 }
 
+/** Hosted demo: `?layout=…` is applied when `?data=…` finishes loading. */
+async function loadFromQuery() {
+  try {
+    const layout = await fetchQueryFile('layout');
+    if (layout) S.pendingLayout = JSON.parse(await layout.text());
+    const data = await fetchQueryFile('data');
+    if (data) await loadExcel(data);
+  } catch (e) {
+    console.error(e);
+    toast('Could not load the demo data: ' + (e.message || e), true);
+  }
+}
+
 function ingest(fileName, sheets) {
   S.fileName = fileName;
   S.sheets = sheets;
@@ -1222,4 +1235,4 @@ function init() {
 }
 
 init();
-loadFromOpener();
+loadFromOpener().then(() => { if (!S.wells.length) loadFromQuery(); });

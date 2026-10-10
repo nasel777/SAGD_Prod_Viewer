@@ -8,3 +8,9 @@ __pycache__/
 *.xls
 *.csv
 *.zip
+charts/
+# synthetic demo workbook (tools/make_demo_data.py), safe to publish
+!demo/SAGD_Demo_Data.xlsx
+
+# public demo site, assembled by tools/build_site.py
+site/
