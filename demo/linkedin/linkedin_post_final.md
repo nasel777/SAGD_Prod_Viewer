@@ -1,3 +1,5 @@
+Well performance monitoring in a single HTML file: no install, no server, no data leaving your PC
+
 I wanted a tool I could reach for easily while analyzing production data, so I built two: SAGD Production Viewer and SAGD Temp Viewer.
 
 Time-series plots are my starting point. But looking at the same data from several angles (trend, crossplot, profile, before/after statistics) is what lets me challenge an interpretation and reach conclusions I can trust.
@@ -15,7 +17,7 @@ Time-series plots are my starting point. But looking at the same data from sever
 
 Each viewer is a single offline HTML file. Open it in a browser and load an Excel workbook. There's no installation or server, and the data stays on your machine.
 
-I built both tools through vibe coding: I described what I wanted to see as an engineer, then iterated on the result in plain language until each view answered a real monitoring question. That approach also makes the tools easy to adapt. They're built around SAGD workflows, but they can be reshaped at any time to fit each field's characteristics and each team's needs.
+I built both tools through vibe coding: I described what I wanted to see as an engineer, then iterated on the result in plain language until each view answered a real monitoring question. That approach also makes the tools easy to adapt. The Temp Viewer and KPIs like SOR are SAGD-specific, but the core of the Production Viewer (time series, crossplots, statistics and well-to-well comparisons) works on any daily well data. That makes it a good fit for production monitoring in conventional fields too, and the views can be reshaped to each field's characteristics and each team's needs.
 
 With the viewers as a base, AI makes it easy to add almost any chart you need. The viewers themselves never send data anywhere, but asking an external AI service to work with real production data does send that data outside the company. In-house or privately hosted LLMs could close this gap, letting engineers build analysis tools with AI while the data stays inside.
 
@@ -25,7 +27,7 @@ All screenshots use a fully synthetic demo dataset of 14 fictional wells, not re
 
 How do you monitor well performance today, and which views would you add?
 
-#SAGD #ProductionEngineering #OilAndGas #PetroleumEngineering #DataVisualization #ArtificialLift #WellPerformance #VibeCoding #DataSecurity #LLM
+#SAGD #ProductionEngineering #OilAndGas #PetroleumEngineering #DataVisualization #ArtificialLift #WellPerformance #ProductionMonitoring #VibeCoding #DataSecurity #LLM
 
 ---
 Recommended image upload order (LinkedIn shows the first four in the preview grid):
