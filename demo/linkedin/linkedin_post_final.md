@@ -1,4 +1,4 @@
-As a SAGD production engineer, I built two tools to make well performance data easier to explore: SAGD Production Viewer and SAGD Temp Viewer.
+I wanted a tool I could reach for easily while analyzing production data, so I built two: SAGD Production Viewer and SAGD Temp Viewer.
 
 Time-series plots are my starting point. But looking at the same data from several angles (trend, crossplot, profile, before/after statistics) is what lets me challenge an interpretation and reach conclusions I can trust.
 
@@ -17,13 +17,15 @@ Each viewer is a single offline HTML file. Open it in a browser and load an Exce
 
 I built both tools through vibe coding: I described what I wanted to see as an engineer, then iterated on the result in plain language until each view answered a real monitoring question. That approach also makes the tools easy to adapt. They're built around SAGD workflows, but they can be reshaped at any time to fit each field's characteristics and each team's needs.
 
+With the viewers as a base, AI makes it easy to add almost any chart you need. The viewers themselves never send data anywhere, but asking an external AI service to work with real production data does send that data outside the company. In-house or privately hosted LLMs could close this gap, letting engineers build analysis tools with AI while the data stays inside.
+
 All screenshots use a fully synthetic demo dataset of 14 fictional wells, not real field data.
 
-👉 Explore the live demo and share your feedback: https://sagd-prod-monitoring.vercel.app
+👉 Explore the live demo (click "Open demo data") and share your feedback: https://sagd-prod-monitoring.vercel.app
 
 How do you monitor well performance today, and which views would you add?
 
-#SAGD #ProductionEngineering #OilAndGas #PetroleumEngineering #DataVisualization #ArtificialLift #WellPerformance #VibeCoding
+#SAGD #ProductionEngineering #OilAndGas #PetroleumEngineering #DataVisualization #ArtificialLift #WellPerformance #VibeCoding #DataSecurity #LLM
 
 ---
 Recommended image upload order (LinkedIn shows the first four in the preview grid):
