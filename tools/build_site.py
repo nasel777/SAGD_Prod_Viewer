@@ -3,7 +3,7 @@
     python3 build.py && python3 tools/build_site.py && (cd site && vercel deploy --prod --yes)
 
 The site root serves the Production Viewer. The viewer copies get a `sagd-demo` meta tag, which turns on
-the "Open demo data" button and the demo download links; the offline files in the repo root stay as they are.
+the "Open demo data" button and the demo download links, plus the Vercel Web Analytics script; the offline files in the repo root stay as they are.
 """
 import json
 import shutil
@@ -25,7 +25,10 @@ SHARE_META = f"""<meta name="description" content="Monitor SAGD well performance
 <meta property="og:description" content="Monitor SAGD well performance with time series, crossplots, statistics and wellbore temperature profiles. Live demo with synthetic data.">
 <meta property="og:image" content="{URL}/img/prod_overview.png">
 <meta property="og:url" content="{URL}/">"""
-VIEWERS = {"SAGD_Prod_Viewer.html": DEMO_META + "\n" + SHARE_META, "SAGD_Temp_Viewer.html": DEMO_META}
+# Vercel Web Analytics (cookieless page views); site copies only, so the offline files make no network calls
+ANALYTICS = '<script defer src="/_vercel/insights/script.js"></script>'
+VIEWERS = {"SAGD_Prod_Viewer.html": "\n".join([DEMO_META, SHARE_META, ANALYTICS]),
+           "SAGD_Temp_Viewer.html": "\n".join([DEMO_META, ANALYTICS])}
 
 for p in list(SITE.glob("*")) if SITE.exists() else []:
     if p.name != ".vercel":  # keep the Vercel project link
