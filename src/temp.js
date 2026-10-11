@@ -118,11 +118,11 @@ async function loadFromOpener() {
   }
 }
 
-/** Hosted demo: `?data=…` opens with that workbook loaded. */
-async function loadFromQuery() {
+/** Load a workbook from a same-origin path: the hosted demo. */
+async function loadFromPath(dataPath) {
+  if (!dataPath) return;
   try {
-    const data = await fetchQueryFile('data');
-    if (data) await loadExcel(data);
+    await loadExcel(await fetchFile(dataPath));
   } catch (e) {
     console.error(e);
     toast('Could not load the demo data: ' + (e.message || e), true);
@@ -579,4 +579,5 @@ function init() {
 }
 
 init();
-loadFromOpener().then(() => { if (!P.wells.length) loadFromQuery(); });
+setupDemo(d => loadFromPath(d.xlsx), false);
+loadFromOpener().then(() => { if (!P.wells.length) loadFromPath(queryPath('data')); });

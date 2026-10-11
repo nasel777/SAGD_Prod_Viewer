@@ -233,15 +233,55 @@ async function readWorkbook(file, onStatus) {
   return sheets;
 }
 
-/* ================= ?data= / ?layout= query (hosted demo) =================
+/* ================= hosted demo: ?data= / ?layout= and the demo offer =================
    A hosted copy can link to `viewer.html?data=demo.xlsx` so the page opens with data loaded.
-   Only relative same-origin paths are fetched; file:// pages simply have no query. */
-async function fetchQueryFile(key) {
-  const v = new URLSearchParams(location.search).get(key);
-  if (!v || /^[a-z][a-z0-9+.-]*:|^\/\//i.test(v)) return null;
-  const res = await fetch(v);
-  if (!res.ok) throw new Error(`${v}: HTTP ${res.status}`);
-  return new File([await res.blob()], decodeURIComponent(v.split('/').pop()));
+   tools/build_site.py also adds <meta name="sagd-demo" data-xlsx=… data-layout=…> to the site copies,
+   which shows an "Open demo data" button and download links. The offline files have neither.
+   Only relative same-origin paths are fetched. */
+function relPath(v) { return v && !/^[a-z][a-z0-9+.-]*:|^\/\//i.test(v) ? v : null; }
+
+function queryPath(key) { return relPath(new URLSearchParams(location.search).get(key)); }
+
+async function fetchFile(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+  return new File([await res.blob()], decodeURIComponent(path.split('/').pop()));
+}
+
+/** {xlsx, layout} from the site's demo meta tag, or null on the offline files. */
+function demoConfig() {
+  const m = document.querySelector('meta[name="sagd-demo"]');
+  const xlsx = m && relPath(m.dataset.xlsx);
+  return xlsx ? { xlsx, layout: relPath(m.dataset.layout) } : null;
+}
+
+/** Demo offer under the empty-state card plus a "Demo files" menu in the top bar; open(cfg) loads the demo. */
+function setupDemo(open, withLayout) {
+  const d = demoConfig();
+  if (!d) return;
+  const esc = v => v.replace(/[&"<>]/g, c => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' }[c]));
+  const links = `<a href="${esc(d.xlsx)}" download>Demo workbook (.xlsx)</a>` +
+    (withLayout && d.layout ? `<a href="${esc(d.layout)}" download>Demo layout (.json)</a>` : '');
+  const card = document.querySelector('#emptyState .drop-card');
+  if (card) {
+    const box = document.createElement('div');
+    box.className = 'demo-offer';
+    box.innerHTML = '<h2>No data at hand? Try the synthetic demo</h2>' +
+      '<p>14 fictional wells; every value is simulated, nothing comes from a real field.</p>' +
+      '<button class="btn primary big" type="button">Open demo data</button>' +
+      `<div class="demo-dl">or download: ${links}</div>`;
+    box.querySelector('button').addEventListener('click', () => open(d));
+    card.appendChild(box);
+  }
+  const anchor = document.querySelector('.topbar label.btn.primary');
+  if (anchor) {
+    const menu = document.createElement('details');
+    menu.className = 'demo-menu';
+    menu.innerHTML = `<summary class="btn" title="Download the synthetic demo files">Demo files ↓</summary><div class="menu">${links}</div>`;
+    menu.addEventListener('click', e => { if (e.target.tagName === 'A') menu.open = false; });
+    document.addEventListener('click', e => { if (!menu.contains(e.target)) menu.open = false; });
+    anchor.before(menu);
+  }
 }
 
 /* ================= hand-off between viewers =================

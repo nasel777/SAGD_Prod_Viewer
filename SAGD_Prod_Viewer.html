@@ -175,6 +175,22 @@ input[type=date], input[type=text] { padding: 4px 6px; border: 1px solid var(--b
 .swatch { width: 10px; height: 10px; border-radius: 50%; flex: none; background: transparent; }
 a.btn { text-decoration: none; color: inherit; }
 
+/* ---------- hosted demo (only when the page carries the sagd-demo meta tag) ---------- */
+.demo-offer { margin-top: 26px; padding-top: 20px; border-top: 1px solid var(--border); }
+.demo-offer h2 { font-size: 15px; margin: 0 0 4px; }
+.demo-dl { margin-top: 12px; color: var(--muted); }
+.demo-dl a { color: var(--accent); margin: 0 6px; }
+.demo-menu { position: relative; }
+.demo-menu summary { list-style: none; }
+.demo-menu summary::-webkit-details-marker { display: none; }
+.demo-menu .menu {
+  position: absolute; right: 0; top: calc(100% + 4px); z-index: 40; min-width: 190px; padding: 4px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
+}
+.demo-menu .menu a { display: block; padding: 7px 10px; border-radius: 6px; color: inherit; text-decoration: none; }
+.demo-menu .menu a:hover { background: var(--surface-2); }
+
 </style>
 </head>
 <body>
@@ -506,15 +522,55 @@ async function readWorkbook(file, onStatus) {
   return sheets;
 }
 
-/* ================= ?data= / ?layout= query (hosted demo) =================
+/* ================= hosted demo: ?data= / ?layout= and the demo offer =================
    A hosted copy can link to `viewer.html?data=demo.xlsx` so the page opens with data loaded.
-   Only relative same-origin paths are fetched; file:// pages simply have no query. */
-async function fetchQueryFile(key) {
-  const v = new URLSearchParams(location.search).get(key);
-  if (!v || /^[a-z][a-z0-9+.-]*:|^\/\//i.test(v)) return null;
-  const res = await fetch(v);
-  if (!res.ok) throw new Error(`${v}: HTTP ${res.status}`);
-  return new File([await res.blob()], decodeURIComponent(v.split('/').pop()));
+   tools/build_site.py also adds <meta name="sagd-demo" data-xlsx=… data-layout=…> to the site copies,
+   which shows an "Open demo data" button and download links. The offline files have neither.
+   Only relative same-origin paths are fetched. */
+function relPath(v) { return v && !/^[a-z][a-z0-9+.-]*:|^\/\//i.test(v) ? v : null; }
+
+function queryPath(key) { return relPath(new URLSearchParams(location.search).get(key)); }
+
+async function fetchFile(path) {
+  const res = await fetch(path);
+  if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+  return new File([await res.blob()], decodeURIComponent(path.split('/').pop()));
+}
+
+/** {xlsx, layout} from the site's demo meta tag, or null on the offline files. */
+function demoConfig() {
+  const m = document.querySelector('meta[name="sagd-demo"]');
+  const xlsx = m && relPath(m.dataset.xlsx);
+  return xlsx ? { xlsx, layout: relPath(m.dataset.layout) } : null;
+}
+
+/** Demo offer under the empty-state card plus a "Demo files" menu in the top bar; open(cfg) loads the demo. */
+function setupDemo(open, withLayout) {
+  const d = demoConfig();
+  if (!d) return;
+  const esc = v => v.replace(/[&"<>]/g, c => ({ '&': '&amp;', '"': '&quot;', '<': '&lt;', '>': '&gt;' }[c]));
+  const links = `<a href="${esc(d.xlsx)}" download>Demo workbook (.xlsx)</a>` +
+    (withLayout && d.layout ? `<a href="${esc(d.layout)}" download>Demo layout (.json)</a>` : '');
+  const card = document.querySelector('#emptyState .drop-card');
+  if (card) {
+    const box = document.createElement('div');
+    box.className = 'demo-offer';
+    box.innerHTML = '<h2>No data at hand? Try the synthetic demo</h2>' +
+      '<p>14 fictional wells; every value is simulated, nothing comes from a real field.</p>' +
+      '<button class="btn primary big" type="button">Open demo data</button>' +
+      `<div class="demo-dl">or download: ${links}</div>`;
+    box.querySelector('button').addEventListener('click', () => open(d));
+    card.appendChild(box);
+  }
+  const anchor = document.querySelector('.topbar label.btn.primary');
+  if (anchor) {
+    const menu = document.createElement('details');
+    menu.className = 'demo-menu';
+    menu.innerHTML = `<summary class="btn" title="Download the synthetic demo files">Demo files ↓</summary><div class="menu">${links}</div>`;
+    menu.addEventListener('click', e => { if (e.target.tagName === 'A') menu.open = false; });
+    document.addEventListener('click', e => { if (!menu.contains(e.target)) menu.open = false; });
+    anchor.before(menu);
+  }
 }
 
 /* ================= hand-off between viewers =================
@@ -655,13 +711,11 @@ async function loadFromOpener() {
   }
 }
 
-/** Hosted demo: `?layout=…` is applied when `?data=…` finishes loading. */
-async function loadFromQuery() {
+/** Load a workbook (and a layout, applied once it is in) from same-origin paths: the hosted demo. */
+async function loadFromPaths(dataPath, layoutPath) {
   try {
-    const layout = await fetchQueryFile('layout');
-    if (layout) S.pendingLayout = JSON.parse(await layout.text());
-    const data = await fetchQueryFile('data');
-    if (data) await loadExcel(data);
+    if (layoutPath) S.pendingLayout = JSON.parse(await (await fetchFile(layoutPath)).text());
+    if (dataPath) await loadExcel(await fetchFile(dataPath));
   } catch (e) {
     console.error(e);
     toast('Could not load the demo data: ' + (e.message || e), true);
@@ -1798,7 +1852,8 @@ function init() {
 }
 
 init();
-loadFromOpener().then(() => { if (!S.wells.length) loadFromQuery(); });
+setupDemo(d => loadFromPaths(d.xlsx, d.layout), true);
+loadFromOpener().then(() => { if (!S.wells.length) loadFromPaths(queryPath('data'), queryPath('layout')); });
 
 </script>
 </body>

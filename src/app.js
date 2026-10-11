@@ -92,13 +92,11 @@ async function loadFromOpener() {
   }
 }
 
-/** Hosted demo: `?layout=…` is applied when `?data=…` finishes loading. */
-async function loadFromQuery() {
+/** Load a workbook (and a layout, applied once it is in) from same-origin paths: the hosted demo. */
+async function loadFromPaths(dataPath, layoutPath) {
   try {
-    const layout = await fetchQueryFile('layout');
-    if (layout) S.pendingLayout = JSON.parse(await layout.text());
-    const data = await fetchQueryFile('data');
-    if (data) await loadExcel(data);
+    if (layoutPath) S.pendingLayout = JSON.parse(await (await fetchFile(layoutPath)).text());
+    if (dataPath) await loadExcel(await fetchFile(dataPath));
   } catch (e) {
     console.error(e);
     toast('Could not load the demo data: ' + (e.message || e), true);
@@ -1235,4 +1233,5 @@ function init() {
 }
 
 init();
-loadFromOpener().then(() => { if (!S.wells.length) loadFromQuery(); });
+setupDemo(d => loadFromPaths(d.xlsx, d.layout), true);
+loadFromOpener().then(() => { if (!S.wells.length) loadFromPaths(queryPath('data'), queryPath('layout')); });
